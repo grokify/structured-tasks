@@ -1,7 +1,12 @@
 # Structured Roadmap
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/grokify/structured-roadmap.svg)](https://pkg.go.dev/github.com/grokify/structured-roadmap)
-[![Go Report Card](https://goreportcard.com/badge/github.com/grokify/structured-roadmap)](https://goreportcard.com/report/github.com/grokify/structured-roadmap)
+[![Build Status][build-status-svg]][build-status-url]
+[![Lint Status][lint-status-svg]][lint-status-url]
+[![Coverage][coverage-svg]][coverage-url]
+[![Go Report Card][goreport-svg]][goreport-url]
+[![Docs][docs-godoc-svg]][docs-godoc-url]
+[![Visualization][viz-svg]][viz-url]
+[![License][license-svg]][license-url]
 
 Structured Roadmap provides a machine-readable JSON intermediate representation (IR) for project roadmaps, with deterministic Markdown generation. It is modeled after [Structured Changelog](https://github.com/grokify/structured-changelog).
 
@@ -399,3 +404,20 @@ func main() {
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
+
+ [build-status-svg]: https://github.com/grokify/structured-roadmap/actions/workflows/ci.yaml/badge.svg?branch=main
+ [build-status-url]: https://github.com/grokify/structured-roadmap/actions/workflows/ci.yaml
+ [lint-status-svg]: https://github.com/grokify/structured-roadmap/actions/workflows/lint.yaml/badge.svg?branch=main
+ [lint-status-url]: https://github.com/grokify/structured-roadmap/actions/workflows/lint.yaml
+ [coverage-svg]: https://img.shields.io/badge/coverage-96.1%25-brightgreen
+ [coverage-url]: https://github.com/grokify/structured-roadmap
+ [goreport-svg]: https://goreportcard.com/badge/github.com/grokify/structured-roadmap
+ [goreport-url]: https://goreportcard.com/report/github.com/grokify/structured-roadmap
+ [docs-godoc-svg]: https://pkg.go.dev/badge/github.com/grokify/structured-roadmap
+ [docs-godoc-url]: https://pkg.go.dev/github.com/grokify/structured-roadmap
+ [viz-svg]: https://img.shields.io/badge/visualizaton-Go-blue.svg
+ [viz-url]: https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=grokify%2Fstructured-roadmap
+ [loc-svg]: https://tokei.rs/b1/github/grokify/structured-roadmap
+ [repo-url]: https://github.com/grokify/structured-roadmap
+ [license-svg]: https://img.shields.io/badge/license-MIT-blue.svg
+ [license-url]: https://github.com/grokify/structured-roadmap/blob/master/LICENSE
