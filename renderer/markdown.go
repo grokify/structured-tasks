@@ -159,16 +159,24 @@ func renderOverviewTable(sb *strings.Builder, r *roadmap.Roadmap, opts Options) 
 		areaNames[area.ID] = area.Name
 	}
 
-	// Sort items by order, then priority
+	// Sort items by completion status (completed first), then by priority
 	sorted := make([]roadmap.Item, len(r.Items))
 	copy(sorted, r.Items)
 	sort.Slice(sorted, func(i, j int) bool {
-		if sorted[i].Order != sorted[j].Order {
-			return sorted[i].Order < sorted[j].Order
+		// Completed items come first
+		iCompleted := sorted[i].Status == roadmap.StatusCompleted
+		jCompleted := sorted[j].Status == roadmap.StatusCompleted
+		if iCompleted != jCompleted {
+			return iCompleted // true (completed) comes before false (not completed)
 		}
+		// Within same completion status, sort by priority
 		pi := roadmap.PriorityOrder(sorted[i].Priority)
 		pj := roadmap.PriorityOrder(sorted[j].Priority)
-		return pi < pj
+		if pi != pj {
+			return pi < pj
+		}
+		// Finally by title for stability
+		return sorted[i].Title < sorted[j].Title
 	})
 
 	for _, item := range sorted {
