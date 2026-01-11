@@ -67,6 +67,9 @@ type Options struct {
 	// ShowAreaSubheadings shows area groupings within phase sections.
 	// Only applies when GroupBy is set to GroupByPhase.
 	ShowAreaSubheadings bool
+
+	// ShowNavLinks adds navigation links (e.g., "Top" links in section headings).
+	ShowNavLinks bool
 }
 
 // DefaultIntroText is the standard introductory paragraph.
@@ -88,6 +91,7 @@ func DefaultOptions() Options {
 		TOCDepth:            1,
 		ShowOverviewTable:   false,
 		ShowAreaSubheadings: false,
+		ShowNavLinks:        true,
 		ShowVersionHistory:  true,
 		ShowDependencies:    false,
 		ShowSections:        true,

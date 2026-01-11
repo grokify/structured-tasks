@@ -27,6 +27,30 @@ func slugify(s string) string {
 	return s
 }
 
+// itemSlug returns a stable anchor slug for an item, independent of rendering options.
+// This enables reliable linking from the overview table to item details.
+func itemSlug(item roadmap.Item) string {
+	if item.ID != "" {
+		return slugify(item.ID)
+	}
+	return slugify(item.Title)
+}
+
+// topAnchorID returns the anchor ID for the page top based on project name.
+func topAnchorID(project string) string {
+	return slugify(project + " Roadmap")
+}
+
+// renderSectionHeading writes a section heading with an optional "Top" navigation link.
+func renderSectionHeading(sb *strings.Builder, title string, project string, opts Options) {
+	if opts.ShowNavLinks {
+		topID := topAnchorID(project)
+		fmt.Fprintf(sb, "## %s <a href=\"#%s\">↑ Top</a>\n\n", title, topID)
+	} else {
+		fmt.Fprintf(sb, "## %s\n\n", title)
+	}
+}
+
 // tocEntry represents an entry in the table of contents.
 type tocEntry struct {
 	Title     string
@@ -203,7 +227,10 @@ func renderOverviewTable(sb *strings.Builder, r *roadmap.Roadmap, opts Options) 
 			areaName = "-"
 		}
 
-		fmt.Fprintf(sb, "| %s | %s | %s | %s |\n", item.Title, status, priority, areaName)
+		// Item title with anchor link to detail section
+		titleLink := fmt.Sprintf("[%s](#%s)", item.Title, itemSlug(item))
+
+		fmt.Fprintf(sb, "| %s | %s | %s | %s |\n", titleLink, status, priority, areaName)
 	}
 	sb.WriteString("\n")
 }
@@ -519,7 +546,7 @@ func renderByArea(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
 			continue
 		}
 
-		fmt.Fprintf(sb, "## %s\n\n", area.Name)
+		renderSectionHeading(sb, area.Name, r.Project, opts)
 		renderItems(sb, items, r, opts)
 
 		if opts.HorizontalRules {
@@ -529,7 +556,7 @@ func renderByArea(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
 
 	// Unspecified area items
 	if items, ok := itemsByArea["_unspecified"]; ok && len(items) > 0 {
-		sb.WriteString("## Other\n\n")
+		renderSectionHeading(sb, "Other", r.Project, opts)
 		renderItems(sb, items, r, opts)
 	}
 }
@@ -547,7 +574,7 @@ func renderByType(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
 			continue
 		}
 
-		fmt.Fprintf(sb, "## %s\n\n", ct.Name)
+		renderSectionHeading(sb, ct.Name, r.Project, opts)
 		renderItems(sb, items, r, opts)
 
 		if opts.HorizontalRules {
@@ -557,7 +584,7 @@ func renderByType(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
 
 	// Unspecified type items
 	if items, ok := itemsByType["_unspecified"]; ok && len(items) > 0 {
-		sb.WriteString("## Other\n\n")
+		renderSectionHeading(sb, "Other", r.Project, opts)
 		renderItems(sb, items, r, opts)
 	}
 }
@@ -588,7 +615,7 @@ func renderByPhase(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
 		if opts.UseEmoji && phase.Status != "" {
 			header += " " + r.GetStatusEmoji(phase.Status)
 		}
-		fmt.Fprintf(sb, "## %s\n\n", header)
+		renderSectionHeading(sb, header, r.Project, opts)
 
 		if phase.Description != "" {
 			sb.WriteString(phase.Description + "\n\n")
@@ -610,7 +637,7 @@ func renderByPhase(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
 
 	// Unphased items
 	if items, ok := itemsByPhase["_unphased"]; ok && len(items) > 0 {
-		sb.WriteString("## Other\n\n")
+		renderSectionHeading(sb, "Other", r.Project, opts)
 		if opts.ShowAreaSubheadings && len(r.Areas) > 0 {
 			renderItemsByAreaWithinPhase(sb, items, r, opts, areaNames, areaOrder)
 		} else {
@@ -729,7 +756,7 @@ func renderByStatus(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
 		if opts.UseEmoji {
 			header = legend[status].Emoji + " " + header
 		}
-		fmt.Fprintf(sb, "## %s\n\n", header)
+		renderSectionHeading(sb, header, r.Project, opts)
 		renderItems(sb, items, r, opts)
 
 		if opts.HorizontalRules {
@@ -758,7 +785,7 @@ func renderByQuarter(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
 		if quarter == "_unscheduled" {
 			header = "Unscheduled"
 		}
-		fmt.Fprintf(sb, "## %s\n\n", header)
+		renderSectionHeading(sb, header, r.Project, opts)
 		renderItems(sb, items, r, opts)
 
 		if opts.HorizontalRules {
@@ -783,7 +810,7 @@ func renderByPriority(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
 		}
 
 		header := roadmap.PriorityLabelFull(priority)
-		fmt.Fprintf(sb, "## %s\n\n", header)
+		renderSectionHeading(sb, header, r.Project, opts)
 		renderItems(sb, items, r, opts)
 
 		if opts.HorizontalRules {
@@ -793,7 +820,7 @@ func renderByPriority(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
 
 	// Unspecified priority items
 	if items, ok := itemsByPriority["_unspecified"]; ok && len(items) > 0 {
-		sb.WriteString("## Other\n\n")
+		renderSectionHeading(sb, "Other", r.Project, opts)
 		renderItems(sb, items, r, opts)
 	}
 }
@@ -852,6 +879,8 @@ func renderItem(sb *strings.Builder, item roadmap.Item, num int, r *roadmap.Road
 	if opts.UseEmoji && !opts.UseCheckboxes {
 		title += " " + r.GetStatusEmoji(item.Status)
 	}
+	// Add stable anchor for navigation from overview table
+	fmt.Fprintf(sb, "<a id=\"%s\"></a>\n\n", itemSlug(item))
 	fmt.Fprintf(sb, "### %s\n\n", title)
 
 	// Description
@@ -966,15 +995,15 @@ func renderSections(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
 	}
 }
 
-func renderSection(sb *strings.Builder, section roadmap.Section, _ *roadmap.Roadmap, _ Options) {
-	fmt.Fprintf(sb, "## %s\n\n", section.Title)
+func renderSection(sb *strings.Builder, section roadmap.Section, r *roadmap.Roadmap, opts Options) {
+	renderSectionHeading(sb, section.Title, r.Project, opts)
 	for _, block := range section.Content {
 		renderContentBlock(sb, block)
 	}
 }
 
 func renderVersionHistory(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
-	sb.WriteString("## Version History\n\n")
+	renderSectionHeading(sb, "Version History", r.Project, opts)
 	sb.WriteString("| Version | Date | Status | Summary |\n")
 	sb.WriteString("|---------|------|--------|--------|\n")
 	for _, v := range r.VersionHistory {
@@ -993,12 +1022,12 @@ func renderVersionHistory(sb *strings.Builder, r *roadmap.Roadmap, opts Options)
 	sb.WriteString("\n")
 }
 
-func renderDependencies(sb *strings.Builder, r *roadmap.Roadmap, _ Options) {
+func renderDependencies(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
 	if r.Dependencies == nil {
 		return
 	}
 
-	sb.WriteString("## Dependencies\n\n")
+	renderSectionHeading(sb, "Dependencies", r.Project, opts)
 
 	if len(r.Dependencies.External) > 0 {
 		sb.WriteString("### External\n\n")
