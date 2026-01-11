@@ -7,6 +7,25 @@
   "maintainers": ["grokify"],
   "releases": [
     {
+      "version": "v0.2.0",
+      "date": "2026-01-11",
+      "highlights": [
+        { "description": "Homebrew and multi-platform binary distribution via GoReleaser" },
+        { "description": "Overview table sorted by completion then priority, with concise priority labels" }
+      ],
+      "added": [
+        { "description": "Overview table sorting: completion percentage (descending) then priority", "commit": "9008763" },
+        { "description": "GoReleaser configuration for multi-platform binary releases (Linux, macOS, Windows × amd64, arm64)", "commit": "bbbd023" },
+        { "description": "GitHub Actions release workflow triggered by version tags", "commit": "bbbd023" },
+        { "description": "Homebrew tap distribution via `brew install structured-roadmap`", "commit": "bbbd023" },
+        { "description": "Binary symlink: both `sroadmap` and `structured-roadmap` commands available", "commit": "bbbd023" },
+        { "description": "`version` command showing build info (version, commit, date)", "commit": "6441277" }
+      ],
+      "changed": [
+        { "description": "Priority labels in table cells use concise single-letter format (P0, P1, P2, P3)", "commit": "15ab629" }
+      ]
+    },
+    {
       "version": "v0.1.0",
       "date": "2026-01-10",
       "highlights": [

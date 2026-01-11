@@ -409,7 +409,7 @@ MIT License - see [LICENSE](LICENSE) for details.
  [build-status-url]: https://github.com/grokify/structured-roadmap/actions/workflows/ci.yaml
  [lint-status-svg]: https://github.com/grokify/structured-roadmap/actions/workflows/lint.yaml/badge.svg?branch=main
  [lint-status-url]: https://github.com/grokify/structured-roadmap/actions/workflows/lint.yaml
- [coverage-svg]: https://img.shields.io/badge/coverage-96.1%25-brightgreen
+ [coverage-svg]: https://img.shields.io/badge/coverage-94.9%25-brightgreen
  [coverage-url]: https://github.com/grokify/structured-roadmap
  [goreport-svg]: https://goreportcard.com/badge/github.com/grokify/structured-roadmap
  [goreport-url]: https://goreportcard.com/report/github.com/grokify/structured-roadmap
