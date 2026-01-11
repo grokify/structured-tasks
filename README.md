@@ -1,0 +1,401 @@
+# Structured Roadmap
+
+[![Go Reference](https://pkg.go.dev/badge/github.com/grokify/structured-roadmap.svg)](https://pkg.go.dev/github.com/grokify/structured-roadmap)
+[![Go Report Card](https://goreportcard.com/badge/github.com/grokify/structured-roadmap)](https://goreportcard.com/report/github.com/grokify/structured-roadmap)
+
+Structured Roadmap provides a machine-readable JSON intermediate representation (IR) for project roadmaps, with deterministic Markdown generation. It is modeled after [Structured Changelog](https://github.com/grokify/structured-changelog).
+
+## Features
+
+- **JSON IR** - Machine-readable roadmap format with rich metadata
+- **Deterministic output** - Same JSON always produces identical Markdown
+- **Two-dimensional categorization** - Area (project component) + Type (change type)
+- **Multiple grouping strategies** - Group by area, type, phase, status, quarter, or priority
+- **Phased roadmaps** - Support for large projects with phases and area sub-sections
+- **Rich content support** - Code blocks, tables, diagrams, lists, and blockquotes
+- **Type validation** - Integrates with [structured-changelog](https://github.com/grokify/structured-changelog) for type consistency
+- **Dependency tracking** - Item dependencies with graph generation
+- **Validation** - Schema validation with detailed error messages
+- **Statistics** - Track progress and completion rates
+
+## Installation
+
+```bash
+go install github.com/grokify/structured-roadmap/cmd/sroadmap@latest
+```
+
+Or as a library:
+
+```bash
+go get github.com/grokify/structured-roadmap
+```
+
+## Quick Start
+
+### Create a ROADMAP.json
+
+```json
+{
+  "ir_version": "1.0",
+  "project": "my-project",
+  "areas": [
+    {"id": "core", "name": "Core Features", "priority": 1}
+  ],
+  "items": [
+    {
+      "id": "feature-1",
+      "title": "User Authentication",
+      "description": "Add OAuth2 login support",
+      "status": "completed",
+      "version": "1.0.0",
+      "area": "core",
+      "type": "Added",
+      "priority": "high"
+    },
+    {
+      "id": "feature-2",
+      "title": "API Rate Limiting",
+      "description": "Add configurable rate limits",
+      "status": "planned",
+      "target_quarter": "Q2 2026",
+      "area": "core",
+      "type": "Added",
+      "priority": "medium",
+      "depends_on": ["feature-1"]
+    }
+  ]
+}
+```
+
+### Generate Markdown
+
+```bash
+sroadmap generate -i ROADMAP.json -o ROADMAP.md
+```
+
+### Validate
+
+```bash
+sroadmap validate ROADMAP.json
+```
+
+### Show Statistics
+
+```bash
+sroadmap stats ROADMAP.json
+```
+
+### Generate Dependency Graph
+
+```bash
+sroadmap deps ROADMAP.json --format mermaid
+```
+
+## CLI Commands
+
+### validate
+
+Validate a ROADMAP.json file against the schema.
+
+```bash
+sroadmap validate ROADMAP.json
+```
+
+### generate
+
+Generate ROADMAP.md from ROADMAP.json.
+
+```bash
+sroadmap generate -i ROADMAP.json -o ROADMAP.md
+```
+
+Options:
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-i, --input` | ROADMAP.json | Input JSON file |
+| `-o, --output` | stdout | Output Markdown file |
+| `--group-by` | area | Grouping: area, type, phase, status, quarter, priority |
+| `--checkboxes` | true | Use [x]/[ ] checkbox syntax |
+| `--emoji` | true | Include emoji status indicators |
+| `--legend` | false | Show legend table |
+| `--no-intro` | false | Omit introductory paragraph (intro shown by default) |
+| `--toc` | false | Show table of contents with progress counts |
+| `--toc-depth` | 1 | TOC depth: 1 = sections only, 2 = sections + items |
+| `--overview` | false | Show overview table with all items |
+| `--area-subheadings` | false | Show area sub-sections within phases |
+| `--numbered` | false | Number items |
+| `--no-rules` | false | Omit horizontal rules between sections |
+
+### stats
+
+Show roadmap statistics.
+
+```bash
+sroadmap stats ROADMAP.json
+```
+
+Output:
+
+```
+Roadmap: my-project
+Total items: 10
+
+By Status:
+  ✅ Completed: 4 (40%)
+  🚧 In Progress: 2 (20%)
+  📋 Planned: 3 (30%)
+  💡 Under Consideration: 1 (10%)
+
+By Priority:
+  High Priority: 3 (30%)
+  Medium Priority: 5 (50%)
+  Low Priority: 2 (20%)
+
+By Area:
+  Core Features: 6
+  Improvements: 4
+
+By Type:
+  Added: 5
+  Changed: 3
+  Fixed: 2
+
+Progress: 40% complete
+```
+
+### deps
+
+Generate dependency graph in Mermaid or DOT format.
+
+```bash
+sroadmap deps ROADMAP.json --format mermaid
+```
+
+## JSON IR Schema
+
+### Top-Level Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `ir_version` | string | Yes | Schema version ("1.0") |
+| `project` | string | Yes | Project name |
+| `repository` | string | No | Repository URL |
+| `generated_at` | datetime | No | Generation timestamp |
+| `legend` | object | No | Custom status legend |
+| `areas` | array | No | Project areas/components |
+| `phases` | array | No | Development phases |
+| `items` | array | No | Roadmap items |
+| `sections` | array | No | Freeform content sections |
+| `version_history` | array | No | Version milestones |
+| `dependencies` | object | No | External/internal dependencies |
+
+### Item Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | string | Yes | Unique identifier |
+| `title` | string | Yes | Item title |
+| `description` | string | No | Item description |
+| `status` | enum | Yes | completed, in_progress, planned, future |
+| `version` | string | No | Version where completed |
+| `completed_date` | date | No | Completion date |
+| `target_quarter` | string | No | Target quarter (e.g., "Q2 2026") |
+| `target_version` | string | No | Target version |
+| `area` | string | No | Area ID (project component) |
+| `type` | string | No | Change type (aligns with structured-changelog) |
+| `phase` | string | No | Phase ID |
+| `priority` | enum | No | critical, high, medium, low |
+| `order` | int | No | Explicit sort order within groups |
+| `depends_on` | array | No | IDs of dependencies |
+| `tasks` | array | No | Sub-tasks with completion status |
+| `content` | array | No | Rich content blocks |
+
+### Two-Dimensional Categorization
+
+Items can be categorized along two orthogonal dimensions:
+
+| Dimension | Field | Purpose | Example Values |
+|-----------|-------|---------|----------------|
+| **Area** | `area` | WHERE in the project | "core", "api", "ui", "backend" |
+| **Type** | `type` | WHAT kind of change | "Added", "Changed", "Fixed", "Security" |
+
+- **Area** is user-defined and groups items by project component
+- **Type** aligns with [structured-changelog](https://github.com/grokify/structured-changelog) change types and is validated against the registry
+
+This allows grouping by area for roadmaps (`--group-by area`) while preserving type information for changelog integration when items are completed.
+
+### Content Block Types
+
+| Type | Fields | Description |
+|------|--------|-------------|
+| `text` | value | Markdown text |
+| `code` | value, language | Code block |
+| `diagram` | value, format | ASCII or Mermaid diagram |
+| `table` | headers, rows | Markdown table |
+| `list` | items | Bullet list |
+| `blockquote` | value | Blockquote/callout (renders with `>` prefix) |
+
+## Phased Roadmaps (Large Projects)
+
+For large projects with multiple development phases (like [omnistorage](https://github.com/grokify/omnistorage)), use the combination of `phases` and `areas` to create hierarchical roadmaps.
+
+### Structure
+
+```
+Phase 1: Foundation ✅
+├── Core Package
+│   ├── [x] interfaces.go
+│   └── [x] options.go
+├── Format Layer
+│   └── [x] ndjson/writer.go
+└── Backend Layer
+    └── [x] file/backend.go
+
+Phase 2: Extended Interfaces ✅
+├── Core Interfaces
+│   └── [x] extended.go
+└── Utilities
+    └── [x] copy.go
+```
+
+### JSON Structure
+
+```json
+{
+  "ir_version": "1.0",
+  "project": "my-large-project",
+  "phases": [
+    {"id": "phase-1", "name": "Phase 1: Foundation", "status": "completed", "order": 1},
+    {"id": "phase-2", "name": "Phase 2: Extended Interfaces", "status": "completed", "order": 2},
+    {"id": "phase-3", "name": "Phase 3: Cloud Storage", "status": "in_progress", "order": 3}
+  ],
+  "areas": [
+    {"id": "core", "name": "Core Package", "priority": 1},
+    {"id": "format", "name": "Format Layer", "priority": 2},
+    {"id": "backend", "name": "Backend Layer", "priority": 3},
+    {"id": "utils", "name": "Utilities", "priority": 4}
+  ],
+  "items": [
+    {
+      "id": "interfaces",
+      "title": "`interfaces.go` - Backend, RecordWriter, RecordReader interfaces",
+      "status": "completed",
+      "phase": "phase-1",
+      "area": "core",
+      "type": "Added"
+    },
+    {
+      "id": "ndjson-writer",
+      "title": "`format/ndjson/writer.go` - NDJSON RecordWriter",
+      "status": "completed",
+      "phase": "phase-1",
+      "area": "format",
+      "type": "Added"
+    }
+  ],
+  "sections": [
+    {
+      "id": "design-philosophy",
+      "title": "Design Philosophy",
+      "order": 0,
+      "content": [
+        {"type": "text", "value": "This project uses **interface composition** to support both simple and advanced use cases."},
+        {"type": "blockquote", "value": "**Note:** Cloud provider backends with large SDK dependencies are in separate repos."}
+      ]
+    }
+  ]
+}
+```
+
+### Generate with Area Sub-headings
+
+When using phases, enable area sub-headings to show logical groupings within each phase:
+
+```bash
+sroadmap generate -i ROADMAP.json -o ROADMAP.md \
+  --group-by phase \
+  --area-subheadings \
+  --toc
+```
+
+This produces output like:
+
+```markdown
+## Phase 1: Foundation ✅
+
+Core interfaces and essential implementations.
+
+### Core Package
+
+- [x] `interfaces.go` - Backend, RecordWriter, RecordReader interfaces
+- [x] `options.go` - WriterOption, ReaderOption, configs
+
+### Format Layer
+
+- [x] `format/ndjson/writer.go` - NDJSON RecordWriter
+- [x] `format/ndjson/reader.go` - NDJSON RecordReader
+
+---
+
+## Phase 2: Extended Interfaces ✅
+...
+```
+
+### Key Points
+
+1. **Phases** define sequential development stages with their own status
+2. **Areas** define logical groupings within phases (components, layers)
+3. Items have both `phase` and `area` fields for two-dimensional organization
+4. Use `--group-by phase --area-subheadings` for hierarchical output
+5. Items render as compact task lists under area sub-headings
+6. Use `blockquote` content type for notes and callouts
+
+## Library Usage
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/grokify/structured-roadmap/roadmap"
+    "github.com/grokify/structured-roadmap/renderer"
+)
+
+func main() {
+    // Parse roadmap
+    r, err := roadmap.ParseFile("ROADMAP.json")
+    if err != nil {
+        panic(err)
+    }
+
+    // Validate
+    result := roadmap.Validate(r)
+    if !result.Valid {
+        for _, e := range result.Errors {
+            fmt.Printf("Error: %s: %s\n", e.Field, e.Message)
+        }
+        return
+    }
+
+    // Get statistics
+    stats := r.Stats()
+    fmt.Printf("Progress: %.0f%% complete\n", stats.CompletedPercent())
+
+    // Render to Markdown
+    opts := renderer.DefaultOptions()
+    opts.GroupBy = renderer.GroupByPriority
+    opts.ShowTOC = true
+    output := renderer.Render(r, opts)
+    fmt.Println(output)
+}
+```
+
+## Related Projects
+
+- [Structured Changelog](https://github.com/grokify/structured-changelog) - Machine-readable changelogs
+- [Keep a Changelog](https://keepachangelog.com/) - Changelog format inspiration
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
