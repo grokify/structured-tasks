@@ -1,5 +1,6 @@
 # Binaries
 /sroadmap
+cmd/sroadmap/sroadmap
 *.exe
 *.exe~
 *.dll
