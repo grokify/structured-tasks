@@ -10,13 +10,17 @@
       "version": "v0.2.1",
       "date": "2026-01-11",
       "highlights": [
-        { "description": "Simplified title format to avoid duplication" }
+        { "description": "Simplified title format and summary table shown by default" }
+      ],
+      "added": [
+        { "description": "Summary table (overview of all items) now shown by default", "commit": "ad70518" }
       ],
       "fixed": [
         { "description": "Title duplication when project name contains 'Roadmap' (e.g., 'Structured Roadmap Roadmap')", "commit": "ef2c6f0" }
       ],
       "changed": [
-        { "description": "Generated title format: now `# Roadmap` with `**Project:** <name>` below instead of `# <name> Roadmap`", "commit": "ef2c6f0" }
+        { "description": "Generated title format: now `# Roadmap` with `**Project:** <name>` below instead of `# <name> Roadmap`", "commit": "ef2c6f0" },
+        { "description": "Overview table renamed to 'Summary' to avoid conflict with project Overview section", "commit": "ad70518" }
       ]
     },
     {
