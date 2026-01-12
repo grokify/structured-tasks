@@ -7,6 +7,19 @@
   "maintainers": ["grokify"],
   "releases": [
     {
+      "version": "v0.2.1",
+      "date": "2026-01-11",
+      "highlights": [
+        { "description": "Simplified title format to avoid duplication" }
+      ],
+      "fixed": [
+        { "description": "Title duplication when project name contains 'Roadmap' (e.g., 'Structured Roadmap Roadmap')", "commit": "ef2c6f0" }
+      ],
+      "changed": [
+        { "description": "Generated title format: now `# Roadmap` with `**Project:** <name>` below instead of `# <name> Roadmap`", "commit": "ef2c6f0" }
+      ]
+    },
+    {
       "version": "v0.2.0",
       "date": "2026-01-11",
       "highlights": [
