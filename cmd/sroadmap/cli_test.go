@@ -116,7 +116,7 @@ func TestGenerateCommand(t *testing.T) {
 			t.Fatalf("generate failed: %v", err)
 		}
 
-		if !strings.Contains(stdout, "# Test Project Roadmap") {
+		if !strings.Contains(stdout, "# Roadmap") {
 			t.Error("Expected roadmap title in output")
 		}
 		if !strings.Contains(stdout, "## Core Features") {
@@ -143,7 +143,7 @@ func TestGenerateCommand(t *testing.T) {
 			t.Fatalf("Failed to read output file: %v", err)
 		}
 
-		if !strings.Contains(string(content), "# Test Project Roadmap") {
+		if !strings.Contains(string(content), "# Roadmap") {
 			t.Error("Expected roadmap title in output file")
 		}
 	})

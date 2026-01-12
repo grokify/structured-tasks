@@ -36,9 +36,9 @@ func itemSlug(item roadmap.Item) string {
 	return slugify(item.Title)
 }
 
-// topAnchorID returns the anchor ID for the page top based on project name.
-func topAnchorID(project string) string {
-	return slugify(project + " Roadmap")
+// topAnchorID returns the anchor ID for the page top.
+func topAnchorID(_ string) string {
+	return "roadmap"
 }
 
 // renderSectionHeading writes a section heading with an optional "Top" navigation link.
@@ -65,7 +65,12 @@ func Render(r *roadmap.Roadmap, opts Options) string {
 	var sb strings.Builder
 
 	// Title
-	sb.WriteString(fmt.Sprintf("# %s Roadmap\n\n", r.Project))
+	sb.WriteString("# Roadmap\n\n")
+
+	// Project name
+	if r.Project != "" {
+		fmt.Fprintf(&sb, "**Project:** %s\n\n", r.Project)
+	}
 
 	// Intro text
 	if opts.ShowIntro {

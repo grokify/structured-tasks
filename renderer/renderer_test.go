@@ -27,8 +27,11 @@ func TestRender(t *testing.T) {
 		opts := DefaultOptions()
 		output := Render(r, opts)
 
-		if !strings.Contains(output, "# Test Project Roadmap") {
+		if !strings.Contains(output, "# Roadmap") {
 			t.Error("Expected title in output")
+		}
+		if !strings.Contains(output, "**Project:** Test Project") {
+			t.Error("Expected project name in output")
 		}
 		if !strings.Contains(output, "## Core Features") {
 			t.Error("Expected area heading in output")
@@ -369,7 +372,7 @@ func TestRenderToFile(t *testing.T) {
 		t.Fatalf("Failed to read output file: %v", err)
 	}
 
-	if !strings.Contains(string(content), "# Test Roadmap") {
+	if !strings.Contains(string(content), "# Roadmap") {
 		t.Error("Expected roadmap title in output file")
 	}
 }
@@ -461,7 +464,7 @@ func TestRenderNoIntro(t *testing.T) {
 	output := Render(r, opts)
 
 	// Should still have title but no intro paragraph
-	if !strings.Contains(output, "# Test Roadmap") {
+	if !strings.Contains(output, "# Roadmap") {
 		t.Error("Expected title")
 	}
 }
@@ -666,8 +669,11 @@ func TestRenderEmptyRoadmap(t *testing.T) {
 	opts := DefaultOptions()
 	output := Render(r, opts)
 
-	if !strings.Contains(output, "# Empty Project Roadmap") {
+	if !strings.Contains(output, "# Roadmap") {
 		t.Error("Expected title even for empty roadmap")
+	}
+	if !strings.Contains(output, "**Project:** Empty Project") {
+		t.Error("Expected project name even for empty roadmap")
 	}
 }
 
