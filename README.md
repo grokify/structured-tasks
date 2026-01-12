@@ -25,11 +25,22 @@ Structured Roadmap provides a machine-readable JSON intermediate representation 
 
 ## Installation
 
+### Homebrew (macOS/Linux)
+
+```bash
+brew tap grokify/tap
+brew install structured-roadmap
+```
+
+This installs the `sroadmap` CLI (also available as `structured-roadmap`).
+
+### Go Install
+
 ```bash
 go install github.com/grokify/structured-roadmap/cmd/sroadmap@latest
 ```
 
-Or as a library:
+### Go Library
 
 ```bash
 go get github.com/grokify/structured-roadmap
@@ -127,7 +138,7 @@ Options:
 | `--no-intro` | false | Omit introductory paragraph (intro shown by default) |
 | `--toc` | false | Show table of contents with progress counts |
 | `--toc-depth` | 1 | TOC depth: 1 = sections only, 2 = sections + items |
-| `--overview` | false | Show overview table with all items |
+| `--overview` | true | Show summary table with all items |
 | `--area-subheadings` | false | Show area sub-sections within phases |
 | `--numbered` | false | Number items |
 | `--no-rules` | false | Omit horizontal rules between sections |
