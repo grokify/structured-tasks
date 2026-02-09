@@ -8,37 +8,32 @@ import (
 	"strings"
 
 	"github.com/grokify/structured-changelog/changelog"
-	"github.com/grokify/structured-roadmap/roadmap"
+	"github.com/grokify/structured-tasks/tasks"
 )
 
 // slugify converts a heading to a GitHub-flavored markdown anchor.
 func slugify(s string) string {
-	// Remove emoji and special characters, lowercase, replace spaces with hyphens
 	s = strings.ToLower(s)
 	s = strings.ReplaceAll(s, " ", "-")
-	// Remove characters that aren't alphanumeric, hyphens, or underscores
 	re := regexp.MustCompile(`[^a-z0-9\-_]`)
 	s = re.ReplaceAllString(s, "")
-	// Collapse multiple hyphens
 	re = regexp.MustCompile(`-+`)
 	s = re.ReplaceAllString(s, "-")
-	// Trim leading/trailing hyphens
 	s = strings.Trim(s, "-")
 	return s
 }
 
-// itemSlug returns a stable anchor slug for an item, independent of rendering options.
-// This enables reliable linking from the overview table to item details.
-func itemSlug(item roadmap.Item) string {
-	if item.ID != "" {
-		return slugify(item.ID)
+// taskSlug returns a stable anchor slug for a task.
+func taskSlug(task tasks.Task) string {
+	if task.ID != "" {
+		return slugify(task.ID)
 	}
-	return slugify(item.Title)
+	return slugify(task.Title)
 }
 
 // topAnchorID returns the anchor ID for the page top.
 func topAnchorID(_ string) string {
-	return "roadmap"
+	return "task-list"
 }
 
 // renderSectionHeading writes a section heading with an optional "Top" navigation link.
@@ -57,19 +52,19 @@ type tocEntry struct {
 	Slug      string
 	Count     int
 	Completed int
-	Items     []tocEntry
+	Tasks     []tocEntry
 }
 
-// Render generates Markdown from a Roadmap.
-func Render(r *roadmap.Roadmap, opts Options) string {
+// Render generates Markdown from a TaskList.
+func Render(tl *tasks.TaskList, opts Options) string {
 	var sb strings.Builder
 
 	// Title
-	sb.WriteString("# Roadmap\n\n")
+	sb.WriteString("# Task List\n\n")
 
 	// Project name
-	if r.Project != "" {
-		fmt.Fprintf(&sb, "**Project:** %s\n\n", r.Project)
+	if tl.Project != "" {
+		fmt.Fprintf(&sb, "**Project:** %s\n\n", tl.Project)
 	}
 
 	// Intro text
@@ -83,26 +78,15 @@ func Render(r *roadmap.Roadmap, opts Options) string {
 
 	// Overview table
 	if opts.ShowOverviewTable {
-		renderOverviewTable(&sb, r, opts)
+		renderOverviewTable(&sb, tl, opts)
 		if opts.HorizontalRules {
 			sb.WriteString("---\n\n")
 		}
 	}
 
-	// Overview section (if exists)
-	for _, section := range r.Sections {
-		if section.ID == "overview" {
-			renderSection(&sb, section, r, opts)
-			if opts.HorizontalRules {
-				sb.WriteString("---\n\n")
-			}
-			break
-		}
-	}
-
 	// Table of Contents
 	if opts.ShowTOC {
-		renderTOC(&sb, r, opts)
+		renderTOC(&sb, tl, opts)
 		if opts.HorizontalRules {
 			sb.WriteString("---\n\n")
 		}
@@ -110,7 +94,7 @@ func Render(r *roadmap.Roadmap, opts Options) string {
 
 	// Legend
 	if opts.ShowLegend {
-		renderLegend(&sb, r)
+		renderLegend(&sb, tl)
 		if opts.HorizontalRules {
 			sb.WriteString("---\n\n")
 		}
@@ -119,55 +103,30 @@ func Render(r *roadmap.Roadmap, opts Options) string {
 	// Main content grouped by strategy
 	switch opts.GroupBy {
 	case GroupByPhase:
-		renderByPhase(&sb, r, opts)
+		renderByPhase(&sb, tl, opts)
 	case GroupByStatus:
-		renderByStatus(&sb, r, opts)
-	case GroupByQuarter:
-		renderByQuarter(&sb, r, opts)
-	case GroupByPriority:
-		renderByPriority(&sb, r, opts)
+		renderByStatus(&sb, tl, opts)
 	case GroupByType:
-		renderByType(&sb, r, opts)
+		renderByType(&sb, tl, opts)
 	default:
-		renderByArea(&sb, r, opts)
-	}
-
-	// Additional sections
-	if opts.ShowSections {
-		renderSections(&sb, r, opts)
-	}
-
-	// Version history
-	if opts.ShowVersionHistory && len(r.VersionHistory) > 0 {
-		if opts.HorizontalRules {
-			sb.WriteString("---\n\n")
-		}
-		renderVersionHistory(&sb, r, opts)
-	}
-
-	// Dependencies
-	if opts.ShowDependencies && r.Dependencies != nil {
-		if opts.HorizontalRules {
-			sb.WriteString("---\n\n")
-		}
-		renderDependencies(&sb, r, opts)
+		renderByArea(&sb, tl, opts)
 	}
 
 	return strings.TrimRight(sb.String(), "\n") + "\n"
 }
 
 // RenderToFile writes rendered Markdown to a file.
-func RenderToFile(path string, r *roadmap.Roadmap, opts Options) error {
-	content := Render(r, opts)
+func RenderToFile(path string, tl *tasks.TaskList, opts Options) error {
+	content := Render(tl, opts)
 	return os.WriteFile(path, []byte(content), 0600)
 }
 
-func renderLegend(sb *strings.Builder, r *roadmap.Roadmap) {
+func renderLegend(sb *strings.Builder, tl *tasks.TaskList) {
 	sb.WriteString("## Legend\n\n")
 	sb.WriteString("| Status | Description |\n")
 	sb.WriteString("|--------|-------------|\n")
-	legend := r.GetLegend()
-	for _, status := range []roadmap.Status{roadmap.StatusCompleted, roadmap.StatusInProgress, roadmap.StatusPlanned, roadmap.StatusFuture} {
+	legend := tl.GetLegend()
+	for _, status := range tasks.StatusOrder() {
 		if entry, ok := legend[status]; ok {
 			fmt.Fprintf(sb, "| %s | %s |\n", entry.Emoji, entry.Description)
 		}
@@ -175,98 +134,80 @@ func renderLegend(sb *strings.Builder, r *roadmap.Roadmap) {
 	sb.WriteString("\n")
 }
 
-func renderOverviewTable(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
+func renderOverviewTable(sb *strings.Builder, tl *tasks.TaskList, opts Options) {
 	sb.WriteString("## Summary\n\n")
-	sb.WriteString("| Item | Status | Priority | Area |\n")
-	sb.WriteString("|------|--------|----------|------|\n")
+	sb.WriteString("| Task | Status | Phase | Area |\n")
+	sb.WriteString("|------|--------|-------|------|\n")
 
-	legend := r.GetLegend()
+	legend := tl.GetLegend()
 
 	// Build area name lookup
 	areaNames := make(map[string]string)
-	for _, area := range r.Areas {
+	for _, area := range tl.Areas {
 		areaNames[area.ID] = area.Name
 	}
 
-	// Sort items by completion status (completed first), then by priority
-	sorted := make([]roadmap.Item, len(r.Items))
-	copy(sorted, r.Items)
+	// Sort tasks: completed first, then by phase, then by title
+	sorted := make([]tasks.Task, len(tl.Tasks))
+	copy(sorted, tl.Tasks)
 	sort.Slice(sorted, func(i, j int) bool {
-		// Completed items come first
-		iCompleted := sorted[i].Status == roadmap.StatusCompleted
-		jCompleted := sorted[j].Status == roadmap.StatusCompleted
+		iCompleted := sorted[i].Status == tasks.StatusCompleted
+		jCompleted := sorted[j].Status == tasks.StatusCompleted
 		if iCompleted != jCompleted {
-			return iCompleted // true (completed) comes before false (not completed)
+			return iCompleted
 		}
-		// Within same completion status, sort by priority
-		pi := roadmap.PriorityOrder(sorted[i].Priority)
-		pj := roadmap.PriorityOrder(sorted[j].Priority)
-		if pi != pj {
-			return pi < pj
+		if sorted[i].Phase != sorted[j].Phase {
+			return sorted[i].Phase < sorted[j].Phase
 		}
-		// Finally by title for stability
 		return sorted[i].Title < sorted[j].Title
 	})
 
-	for _, item := range sorted {
-		if item.Status == roadmap.StatusCompleted && !opts.ShowCompleted {
+	for _, task := range sorted {
+		if task.Status == tasks.StatusCompleted && !opts.ShowCompleted {
 			continue
 		}
 
 		// Status emoji
 		status := ""
 		if opts.UseEmoji {
-			if entry, ok := legend[item.Status]; ok {
+			if entry, ok := legend[task.Status]; ok {
 				status = entry.Emoji
 			}
 		} else {
-			status = string(item.Status)
+			status = string(task.Status)
 		}
 
-		// Priority label
-		priority := roadmap.PriorityLabel(item.Priority)
+		// Phase
+		phase := "-"
+		if task.Phase > 0 {
+			phase = fmt.Sprintf("Phase %d", task.Phase)
+		}
 
 		// Area name
-		areaName := areaNames[item.Area]
+		areaName := areaNames[task.Area]
 		if areaName == "" {
 			areaName = "-"
 		}
 
-		// Item title with anchor link to detail section
-		titleLink := fmt.Sprintf("[%s](#%s)", item.Title, itemSlug(item))
+		// Task title with anchor link
+		titleLink := fmt.Sprintf("[%s](#%s)", task.Title, taskSlug(task))
 
-		fmt.Fprintf(sb, "| %s | %s | %s | %s |\n", titleLink, status, priority, areaName)
+		fmt.Fprintf(sb, "| %s | %s | %s | %s |\n", titleLink, status, phase, areaName)
 	}
 	sb.WriteString("\n")
 }
 
-func renderTOC(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
+func renderTOC(sb *strings.Builder, tl *tasks.TaskList, opts Options) {
 	sb.WriteString("## Table of Contents\n\n")
 
-	entries := buildTOCEntries(r, opts)
+	entries := buildTOCEntries(tl, opts)
 
 	for _, entry := range entries {
-		// Section level with progress (completed/total)
 		fmt.Fprintf(sb, "- [%s (%d/%d)](#%s)\n", entry.Title, entry.Completed, entry.Count, entry.Slug)
 
-		// Item level (depth 2)
 		if opts.TOCDepth >= 2 {
-			for _, item := range entry.Items {
-				fmt.Fprintf(sb, "  - [%s](#%s)\n", item.Title, item.Slug)
-			}
-		}
-	}
-
-	// Add freeform sections to TOC
-	if opts.ShowSections {
-		for _, section := range r.Sections {
-			if section.ID != "overview" {
-				count := countSectionItems(section)
-				if count > 0 {
-					fmt.Fprintf(sb, "- [%s (%d)](#%s)\n", section.Title, count, slugify(section.Title))
-				} else {
-					fmt.Fprintf(sb, "- [%s](#%s)\n", section.Title, slugify(section.Title))
-				}
+			for _, task := range entry.Tasks {
+				fmt.Fprintf(sb, "  - [%s](#%s)\n", task.Title, task.Slug)
 			}
 		}
 	}
@@ -274,15 +215,14 @@ func renderTOC(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
 	sb.WriteString("\n")
 }
 
-// isItemComplete returns true if an item is considered complete.
-// An item is complete if its status is "completed" or all its tasks are done.
-func isItemComplete(item roadmap.Item) bool {
-	if item.Status == roadmap.StatusCompleted {
+// isTaskComplete returns true if a task is considered complete.
+func isTaskComplete(task tasks.Task) bool {
+	if task.Status == tasks.StatusCompleted {
 		return true
 	}
-	if len(item.Tasks) > 0 {
-		for _, task := range item.Tasks {
-			if !task.Completed {
+	if len(task.Subtasks) > 0 {
+		for _, subtask := range task.Subtasks {
+			if !subtask.Completed {
 				return false
 			}
 		}
@@ -291,223 +231,139 @@ func isItemComplete(item roadmap.Item) bool {
 	return false
 }
 
-// countCompleted counts how many items in the slice are complete.
-func countCompleted(items []roadmap.Item) int {
+// countCompleted counts how many tasks in the slice are complete.
+func countCompleted(taskList []tasks.Task) int {
 	count := 0
-	for _, item := range items {
-		if isItemComplete(item) {
+	for _, task := range taskList {
+		if isTaskComplete(task) {
 			count++
 		}
 	}
 	return count
 }
 
-// countSectionItems counts list items in a section's content blocks.
-func countSectionItems(section roadmap.Section) int {
-	count := 0
-	for _, block := range section.Content {
-		if block.Type == roadmap.ContentTypeList {
-			count += len(block.Items)
-		}
-	}
-	return count
-}
-
-func buildTOCEntries(r *roadmap.Roadmap, opts Options) []tocEntry {
+func buildTOCEntries(tl *tasks.TaskList, opts Options) []tocEntry {
 	var entries []tocEntry
 
 	switch opts.GroupBy {
-	case GroupByArea: //nolint:dupl // similar structure to GroupByPhase but different types
-		// Sort areas by priority
-		areas := make([]roadmap.Area, len(r.Areas))
-		copy(areas, r.Areas)
-		sort.Slice(areas, func(i, j int) bool {
-			return areas[i].Priority < areas[j].Priority
-		})
-
-		itemsByArea := r.ItemsByArea()
-		for _, area := range areas {
-			items := itemsByArea[area.ID]
-			if len(items) == 0 {
+	case GroupByArea:
+		tasksByArea := tl.TasksByArea()
+		for _, area := range tl.Areas {
+			areaTasks := tasksByArea[area.ID]
+			if len(areaTasks) == 0 {
 				continue
 			}
 			entry := tocEntry{
 				Title:     area.Name,
 				Slug:      slugify(area.Name),
-				Count:     len(items),
-				Completed: countCompleted(items),
+				Count:     len(areaTasks),
+				Completed: countCompleted(areaTasks),
 			}
-			for i, item := range sortItems(items, opts) {
-				title := item.Title
+			for i, task := range sortTasks(areaTasks, opts) {
+				title := task.Title
 				if opts.NumberItems {
-					title = fmt.Sprintf("%d. %s", i+1, item.Title)
+					title = fmt.Sprintf("%d. %s", i+1, task.Title)
 				}
-				entry.Items = append(entry.Items, tocEntry{
+				entry.Tasks = append(entry.Tasks, tocEntry{
 					Title: title,
-					Slug:  slugify(title),
-				})
-			}
-			entries = append(entries, entry)
-		}
-
-	case GroupByPriority:
-		priorityOrder := []roadmap.Priority{
-			roadmap.PriorityCritical,
-			roadmap.PriorityHigh,
-			roadmap.PriorityMedium,
-			roadmap.PriorityLow,
-		}
-		itemsByPriority := r.ItemsByPriority()
-		for _, priority := range priorityOrder {
-			items := itemsByPriority[priority]
-			if len(items) == 0 {
-				continue
-			}
-			title := roadmap.PriorityLabelFull(priority)
-			entry := tocEntry{
-				Title:     title,
-				Slug:      slugify(title),
-				Count:     len(items),
-				Completed: countCompleted(items),
-			}
-			for i, item := range sortItems(items, opts) {
-				itemTitle := item.Title
-				if opts.NumberItems {
-					itemTitle = fmt.Sprintf("%d. %s", i+1, item.Title)
-				}
-				entry.Items = append(entry.Items, tocEntry{
-					Title: itemTitle,
-					Slug:  slugify(itemTitle),
+					Slug:  taskSlug(task),
 				})
 			}
 			entries = append(entries, entry)
 		}
 
 	case GroupByStatus:
-		statusOrder := []roadmap.Status{roadmap.StatusCompleted, roadmap.StatusInProgress, roadmap.StatusPlanned, roadmap.StatusFuture}
-		itemsByStatus := r.ItemsByStatus()
-		legend := r.GetLegend()
-		for _, status := range statusOrder {
-			items := itemsByStatus[status]
-			if len(items) == 0 {
+		tasksByStatus := tl.TasksByStatus()
+		legend := tl.GetLegend()
+		for _, status := range tasks.StatusOrder() {
+			statusTasks := tasksByStatus[status]
+			if len(statusTasks) == 0 {
 				continue
 			}
-			if status == roadmap.StatusCompleted && !opts.ShowCompleted {
+			if status == tasks.StatusCompleted && !opts.ShowCompleted {
 				continue
 			}
 			title := legend[status].Description
 			entry := tocEntry{
 				Title:     title,
 				Slug:      slugify(title),
-				Count:     len(items),
-				Completed: countCompleted(items),
+				Count:     len(statusTasks),
+				Completed: countCompleted(statusTasks),
 			}
-			for i, item := range sortItems(items, opts) {
-				itemTitle := item.Title
+			for i, task := range sortTasks(statusTasks, opts) {
+				taskTitle := task.Title
 				if opts.NumberItems {
-					itemTitle = fmt.Sprintf("%d. %s", i+1, item.Title)
+					taskTitle = fmt.Sprintf("%d. %s", i+1, task.Title)
 				}
-				entry.Items = append(entry.Items, tocEntry{
-					Title: itemTitle,
-					Slug:  slugify(itemTitle),
+				entry.Tasks = append(entry.Tasks, tocEntry{
+					Title: taskTitle,
+					Slug:  taskSlug(task),
 				})
 			}
 			entries = append(entries, entry)
 		}
 
-	case GroupByPhase: //nolint:dupl // similar structure to GroupByArea but different types
-		// Sort phases by order
-		phases := make([]roadmap.Phase, len(r.Phases))
-		copy(phases, r.Phases)
-		sort.Slice(phases, func(i, j int) bool {
-			return phases[i].Order < phases[j].Order
-		})
-
-		itemsByPhase := r.ItemsByPhase()
+	case GroupByPhase:
+		tasksByPhase := tl.TasksByPhase()
+		phases := tl.PhaseNumbers()
 		for _, phase := range phases {
-			items := itemsByPhase[phase.ID]
-			if len(items) == 0 {
+			phaseTasks := tasksByPhase[phase]
+			if len(phaseTasks) == 0 {
 				continue
 			}
-			entry := tocEntry{
-				Title:     phase.Name,
-				Slug:      slugify(phase.Name),
-				Count:     len(items),
-				Completed: countCompleted(items),
-			}
-			for i, item := range sortItems(items, opts) {
-				itemTitle := item.Title
-				if opts.NumberItems {
-					itemTitle = fmt.Sprintf("%d. %s", i+1, item.Title)
-				}
-				entry.Items = append(entry.Items, tocEntry{
-					Title: itemTitle,
-					Slug:  slugify(itemTitle),
-				})
-			}
-			entries = append(entries, entry)
-		}
-
-	case GroupByQuarter:
-		itemsByQuarter := r.ItemsByQuarter()
-		quarters := make([]string, 0, len(itemsByQuarter))
-		for q := range itemsByQuarter {
-			quarters = append(quarters, q)
-		}
-		sort.Strings(quarters)
-
-		for _, quarter := range quarters {
-			items := itemsByQuarter[quarter]
-			if len(items) == 0 {
-				continue
-			}
-			title := quarter
-			if quarter == "_unscheduled" {
-				title = "Unscheduled"
-			}
+			title := fmt.Sprintf("Phase %d", phase)
 			entry := tocEntry{
 				Title:     title,
 				Slug:      slugify(title),
-				Count:     len(items),
-				Completed: countCompleted(items),
+				Count:     len(phaseTasks),
+				Completed: countCompleted(phaseTasks),
 			}
-			for i, item := range sortItems(items, opts) {
-				itemTitle := item.Title
+			for i, task := range sortTasks(phaseTasks, opts) {
+				taskTitle := task.Title
 				if opts.NumberItems {
-					itemTitle = fmt.Sprintf("%d. %s", i+1, item.Title)
+					taskTitle = fmt.Sprintf("%d. %s", i+1, task.Title)
 				}
-				entry.Items = append(entry.Items, tocEntry{
-					Title: itemTitle,
-					Slug:  slugify(itemTitle),
+				entry.Tasks = append(entry.Tasks, tocEntry{
+					Title: taskTitle,
+					Slug:  taskSlug(task),
 				})
+			}
+			entries = append(entries, entry)
+		}
+		// Unphased tasks (phase 0)
+		if phaseTasks := tasksByPhase[0]; len(phaseTasks) > 0 {
+			entry := tocEntry{
+				Title:     "Unphased",
+				Slug:      "unphased",
+				Count:     len(phaseTasks),
+				Completed: countCompleted(phaseTasks),
 			}
 			entries = append(entries, entry)
 		}
 
 	case GroupByType:
-		itemsByType := r.ItemsByType()
+		tasksByType := tl.TasksByType()
 		registry := changelog.DefaultRegistry
 		allTypes := registry.All()
-
 		for _, ct := range allTypes {
-			items := itemsByType[ct.Name]
-			if len(items) == 0 {
+			typeTasks := tasksByType[ct.Name]
+			if len(typeTasks) == 0 {
 				continue
 			}
 			entry := tocEntry{
 				Title:     ct.Name,
 				Slug:      slugify(ct.Name),
-				Count:     len(items),
-				Completed: countCompleted(items),
+				Count:     len(typeTasks),
+				Completed: countCompleted(typeTasks),
 			}
-			for i, item := range sortItems(items, opts) {
-				itemTitle := item.Title
+			for i, task := range sortTasks(typeTasks, opts) {
+				taskTitle := task.Title
 				if opts.NumberItems {
-					itemTitle = fmt.Sprintf("%d. %s", i+1, item.Title)
+					taskTitle = fmt.Sprintf("%d. %s", i+1, task.Title)
 				}
-				entry.Items = append(entry.Items, tocEntry{
-					Title: itemTitle,
-					Slug:  slugify(itemTitle),
+				entry.Tasks = append(entry.Tasks, tocEntry{
+					Title: taskTitle,
+					Slug:  taskSlug(task),
 				})
 			}
 			entries = append(entries, entry)
@@ -517,122 +373,93 @@ func buildTOCEntries(r *roadmap.Roadmap, opts Options) []tocEntry {
 	return entries
 }
 
-// sortItems returns a sorted copy of items for consistent ordering.
-func sortItems(items []roadmap.Item, _ Options) []roadmap.Item {
-	sorted := make([]roadmap.Item, len(items))
-	copy(sorted, items)
+// sortTasks returns a sorted copy of tasks for consistent ordering.
+func sortTasks(taskList []tasks.Task, _ Options) []tasks.Task {
+	sorted := make([]tasks.Task, len(taskList))
+	copy(sorted, taskList)
 	sort.Slice(sorted, func(i, j int) bool {
-		if sorted[i].Order != sorted[j].Order {
-			return sorted[i].Order < sorted[j].Order
-		}
-		pi := roadmap.PriorityOrder(sorted[i].Priority)
-		pj := roadmap.PriorityOrder(sorted[j].Priority)
-		if pi != pj {
-			return pi < pj
+		if sorted[i].Phase != sorted[j].Phase {
+			return sorted[i].Phase < sorted[j].Phase
 		}
 		return sorted[i].Title < sorted[j].Title
 	})
 	return sorted
 }
 
-func renderByArea(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
-	// Sort areas by priority
-	areas := make([]roadmap.Area, len(r.Areas))
-	copy(areas, r.Areas)
-	sort.Slice(areas, func(i, j int) bool {
-		return areas[i].Priority < areas[j].Priority
-	})
+func renderByArea(sb *strings.Builder, tl *tasks.TaskList, opts Options) {
+	tasksByArea := tl.TasksByArea()
 
-	itemsByArea := r.ItemsByArea()
-
-	for _, area := range areas {
-		items := itemsByArea[area.ID]
-		if len(items) == 0 {
+	for _, area := range tl.Areas {
+		areaTasks := tasksByArea[area.ID]
+		if len(areaTasks) == 0 {
 			continue
 		}
 
-		renderSectionHeading(sb, area.Name, r.Project, opts)
-		renderItems(sb, items, r, opts)
+		renderSectionHeading(sb, area.Name, tl.Project, opts)
+		renderTasks(sb, areaTasks, tl, opts)
 
 		if opts.HorizontalRules {
 			sb.WriteString("---\n\n")
 		}
 	}
 
-	// Unspecified area items
-	if items, ok := itemsByArea["_unspecified"]; ok && len(items) > 0 {
-		renderSectionHeading(sb, "Other", r.Project, opts)
-		renderItems(sb, items, r, opts)
+	// Unspecified area tasks
+	if areaTasks, ok := tasksByArea["_unspecified"]; ok && len(areaTasks) > 0 {
+		renderSectionHeading(sb, "Other", tl.Project, opts)
+		renderTasks(sb, areaTasks, tl, opts)
 	}
 }
 
-func renderByType(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
-	itemsByType := r.ItemsByType()
+func renderByType(sb *strings.Builder, tl *tasks.TaskList, opts Options) {
+	tasksByType := tl.TasksByType()
 
-	// Get types in canonical order from structured-changelog registry
 	registry := changelog.DefaultRegistry
 	allTypes := registry.All()
 
 	for _, ct := range allTypes {
-		items := itemsByType[ct.Name]
-		if len(items) == 0 {
+		typeTasks := tasksByType[ct.Name]
+		if len(typeTasks) == 0 {
 			continue
 		}
 
-		renderSectionHeading(sb, ct.Name, r.Project, opts)
-		renderItems(sb, items, r, opts)
+		renderSectionHeading(sb, ct.Name, tl.Project, opts)
+		renderTasks(sb, typeTasks, tl, opts)
 
 		if opts.HorizontalRules {
 			sb.WriteString("---\n\n")
 		}
 	}
 
-	// Unspecified type items
-	if items, ok := itemsByType["_unspecified"]; ok && len(items) > 0 {
-		renderSectionHeading(sb, "Other", r.Project, opts)
-		renderItems(sb, items, r, opts)
+	// Unspecified type tasks
+	if typeTasks, ok := tasksByType["_unspecified"]; ok && len(typeTasks) > 0 {
+		renderSectionHeading(sb, "Other", tl.Project, opts)
+		renderTasks(sb, typeTasks, tl, opts)
 	}
 }
 
-func renderByPhase(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
-	// Sort phases by order
-	phases := make([]roadmap.Phase, len(r.Phases))
-	copy(phases, r.Phases)
-	sort.Slice(phases, func(i, j int) bool {
-		return phases[i].Order < phases[j].Order
-	})
+func renderByPhase(sb *strings.Builder, tl *tasks.TaskList, opts Options) {
+	tasksByPhase := tl.TasksByPhase()
+	phases := tl.PhaseNumbers()
 
-	// Build area name lookup and sorted area list
+	// Build area name lookup
 	areaNames := make(map[string]string)
-	areaOrder := make(map[string]int)
-	for _, area := range r.Areas {
+	for _, area := range tl.Areas {
 		areaNames[area.ID] = area.Name
-		areaOrder[area.ID] = area.Priority
 	}
-
-	itemsByPhase := r.ItemsByPhase()
 
 	for _, phase := range phases {
-		items := itemsByPhase[phase.ID]
-
-		// Phase header with status
-		header := phase.Name
-		if opts.UseEmoji && phase.Status != "" {
-			header += " " + r.GetStatusEmoji(phase.Status)
-		}
-		renderSectionHeading(sb, header, r.Project, opts)
-
-		if phase.Description != "" {
-			sb.WriteString(phase.Description + "\n\n")
+		phaseTasks := tasksByPhase[phase]
+		if len(phaseTasks) == 0 {
+			continue
 		}
 
-		if len(items) > 0 {
-			if opts.ShowAreaSubheadings && len(r.Areas) > 0 {
-				// Group items by area within this phase
-				renderItemsByAreaWithinPhase(sb, items, r, opts, areaNames, areaOrder)
-			} else {
-				renderItems(sb, items, r, opts)
-			}
+		header := fmt.Sprintf("Phase %d", phase)
+		renderSectionHeading(sb, header, tl.Project, opts)
+
+		if opts.ShowAreaSubheadings && len(tl.Areas) > 0 {
+			renderTasksByAreaWithinPhase(sb, phaseTasks, tl, opts, areaNames)
+		} else {
+			renderTasks(sb, phaseTasks, tl, opts)
 		}
 
 		if opts.HorizontalRules {
@@ -640,46 +467,43 @@ func renderByPhase(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
 		}
 	}
 
-	// Unphased items
-	if items, ok := itemsByPhase["_unphased"]; ok && len(items) > 0 {
-		renderSectionHeading(sb, "Other", r.Project, opts)
-		if opts.ShowAreaSubheadings && len(r.Areas) > 0 {
-			renderItemsByAreaWithinPhase(sb, items, r, opts, areaNames, areaOrder)
+	// Unphased tasks (phase 0)
+	if phaseTasks := tasksByPhase[0]; len(phaseTasks) > 0 {
+		renderSectionHeading(sb, "Unphased", tl.Project, opts)
+		if opts.ShowAreaSubheadings && len(tl.Areas) > 0 {
+			renderTasksByAreaWithinPhase(sb, phaseTasks, tl, opts, areaNames)
 		} else {
-			renderItems(sb, items, r, opts)
+			renderTasks(sb, phaseTasks, tl, opts)
 		}
 	}
 }
 
-// renderItemsByAreaWithinPhase renders items grouped by area as sub-sections within a phase.
-func renderItemsByAreaWithinPhase(sb *strings.Builder, items []roadmap.Item, r *roadmap.Roadmap, opts Options, areaNames map[string]string, areaOrder map[string]int) {
-	// Group items by area
-	itemsByArea := make(map[string][]roadmap.Item)
-	for _, item := range items {
-		areaID := item.Area
+// renderTasksByAreaWithinPhase renders tasks grouped by area as sub-sections.
+func renderTasksByAreaWithinPhase(sb *strings.Builder, taskList []tasks.Task, tl *tasks.TaskList, opts Options, areaNames map[string]string) {
+	// Group tasks by area
+	tasksByArea := make(map[string][]tasks.Task)
+	for _, task := range taskList {
+		areaID := task.Area
 		if areaID == "" {
 			areaID = "_unspecified"
 		}
-		itemsByArea[areaID] = append(itemsByArea[areaID], item)
+		tasksByArea[areaID] = append(tasksByArea[areaID], task)
 	}
 
-	// Get sorted area IDs (by priority)
-	areaIDs := make([]string, 0, len(itemsByArea))
-	for areaID := range itemsByArea {
+	// Get sorted area IDs
+	areaIDs := make([]string, 0, len(tasksByArea))
+	for areaID := range tasksByArea {
 		areaIDs = append(areaIDs, areaID)
 	}
-	sort.Slice(areaIDs, func(i, j int) bool {
-		return areaOrder[areaIDs[i]] < areaOrder[areaIDs[j]]
-	})
+	sort.Strings(areaIDs)
 
 	// Render each area as a sub-section
 	for _, areaID := range areaIDs {
-		areaItems := itemsByArea[areaID]
-		if len(areaItems) == 0 {
+		areaTasks := tasksByArea[areaID]
+		if len(areaTasks) == 0 {
 			continue
 		}
 
-		// Area sub-heading
 		areaName := areaNames[areaID]
 		if areaName == "" {
 			if areaID == "_unspecified" {
@@ -690,79 +514,69 @@ func renderItemsByAreaWithinPhase(sb *strings.Builder, items []roadmap.Item, r *
 		}
 		fmt.Fprintf(sb, "### %s\n\n", areaName)
 
-		// Render items as task list (simpler format for sub-sections)
-		renderItemsAsTasks(sb, areaItems, r, opts)
+		renderTasksAsList(sb, areaTasks, tl, opts)
 	}
 }
 
-// renderItemsAsTasks renders items as a simple task list with checkboxes.
-// This is used for sub-sections where full item headers would be too verbose.
-func renderItemsAsTasks(sb *strings.Builder, items []roadmap.Item, _ *roadmap.Roadmap, opts Options) {
-	// Sort items
-	sorted := sortItems(items, opts)
+// renderTasksAsList renders tasks as a simple list with checkboxes.
+func renderTasksAsList(sb *strings.Builder, taskList []tasks.Task, _ *tasks.TaskList, opts Options) {
+	sorted := sortTasks(taskList, opts)
 
-	for _, item := range sorted {
-		if item.Status == roadmap.StatusCompleted && !opts.ShowCompleted {
+	for _, task := range sorted {
+		if task.Status == tasks.StatusCompleted && !opts.ShowCompleted {
 			continue
 		}
 
-		isComplete := isItemComplete(item)
+		isComplete := isTaskComplete(task)
 
-		// Build task line
 		var line string
 		if opts.UseCheckboxes {
 			checkbox := "[ ]"
 			if isComplete {
 				checkbox = "[x]"
 			}
-			line = fmt.Sprintf("- %s %s", checkbox, item.Title)
+			line = fmt.Sprintf("- %s %s", checkbox, task.Title)
 		} else {
-			line = fmt.Sprintf("- %s", item.Title)
+			line = fmt.Sprintf("- %s", task.Title)
 		}
 
-		// Add description if present
-		if item.Description != "" {
-			line += " - " + item.Description
+		if task.Description != "" {
+			line += " - " + task.Description
 		}
 
 		sb.WriteString(line + "\n")
 
-		// Render sub-tasks if present
-		for _, task := range item.Tasks {
-			taskCheckbox := "[ ]"
-			if task.Completed {
-				taskCheckbox = "[x]"
+		// Render subtasks
+		for _, subtask := range task.Subtasks {
+			subtaskCheckbox := "[ ]"
+			if subtask.Completed {
+				subtaskCheckbox = "[x]"
 			}
-			taskLine := fmt.Sprintf("  - %s %s", taskCheckbox, task.Description)
-			if task.FilePath != "" {
-				taskLine += fmt.Sprintf(" (`%s`)", task.FilePath)
-			}
-			sb.WriteString(taskLine + "\n")
+			fmt.Fprintf(sb, "  - %s %s\n", subtaskCheckbox, subtask.Description)
 		}
 	}
 	sb.WriteString("\n")
 }
 
-func renderByStatus(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
-	statusOrder := []roadmap.Status{roadmap.StatusCompleted, roadmap.StatusInProgress, roadmap.StatusPlanned, roadmap.StatusFuture}
-	itemsByStatus := r.ItemsByStatus()
+func renderByStatus(sb *strings.Builder, tl *tasks.TaskList, opts Options) {
+	tasksByStatus := tl.TasksByStatus()
 
-	for _, status := range statusOrder {
-		items := itemsByStatus[status]
-		if len(items) == 0 {
+	for _, status := range tasks.StatusOrder() {
+		statusTasks := tasksByStatus[status]
+		if len(statusTasks) == 0 {
 			continue
 		}
-		if status == roadmap.StatusCompleted && !opts.ShowCompleted {
+		if status == tasks.StatusCompleted && !opts.ShowCompleted {
 			continue
 		}
 
-		legend := r.GetLegend()
+		legend := tl.GetLegend()
 		header := legend[status].Description
 		if opts.UseEmoji {
 			header = legend[status].Emoji + " " + header
 		}
-		renderSectionHeading(sb, header, r.Project, opts)
-		renderItems(sb, items, r, opts)
+		renderSectionHeading(sb, header, tl.Project, opts)
+		renderTasks(sb, statusTasks, tl, opts)
 
 		if opts.HorizontalRules {
 			sb.WriteString("---\n\n")
@@ -770,98 +584,21 @@ func renderByStatus(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
 	}
 }
 
-func renderByQuarter(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
-	itemsByQuarter := r.ItemsByQuarter()
+func renderTasks(sb *strings.Builder, taskList []tasks.Task, tl *tasks.TaskList, opts Options) {
+	sorted := sortTasks(taskList, opts)
 
-	// Get sorted quarters
-	quarters := make([]string, 0, len(itemsByQuarter))
-	for q := range itemsByQuarter {
-		quarters = append(quarters, q)
-	}
-	sort.Strings(quarters)
-
-	for _, quarter := range quarters {
-		items := itemsByQuarter[quarter]
-		if len(items) == 0 {
+	for i, task := range sorted {
+		if task.Status == tasks.StatusCompleted && !opts.ShowCompleted {
 			continue
 		}
-
-		header := quarter
-		if quarter == "_unscheduled" {
-			header = "Unscheduled"
-		}
-		renderSectionHeading(sb, header, r.Project, opts)
-		renderItems(sb, items, r, opts)
-
-		if opts.HorizontalRules {
-			sb.WriteString("---\n\n")
-		}
+		renderTask(sb, task, i+1, tl, opts)
 	}
 }
 
-func renderByPriority(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
-	priorityOrder := []roadmap.Priority{
-		roadmap.PriorityCritical,
-		roadmap.PriorityHigh,
-		roadmap.PriorityMedium,
-		roadmap.PriorityLow,
-	}
-	itemsByPriority := r.ItemsByPriority()
+func renderTask(sb *strings.Builder, task tasks.Task, num int, tl *tasks.TaskList, opts Options) {
+	isComplete := isTaskComplete(task)
 
-	for _, priority := range priorityOrder {
-		items := itemsByPriority[priority]
-		if len(items) == 0 {
-			continue
-		}
-
-		header := roadmap.PriorityLabelFull(priority)
-		renderSectionHeading(sb, header, r.Project, opts)
-		renderItems(sb, items, r, opts)
-
-		if opts.HorizontalRules {
-			sb.WriteString("---\n\n")
-		}
-	}
-
-	// Unspecified priority items
-	if items, ok := itemsByPriority["_unspecified"]; ok && len(items) > 0 {
-		renderSectionHeading(sb, "Other", r.Project, opts)
-		renderItems(sb, items, r, opts)
-	}
-}
-
-func renderItems(sb *strings.Builder, items []roadmap.Item, r *roadmap.Roadmap, opts Options) {
-	// Sort items by order, then by priority, then by title
-	sorted := make([]roadmap.Item, len(items))
-	copy(sorted, items)
-	sort.Slice(sorted, func(i, j int) bool {
-		// First by explicit order
-		if sorted[i].Order != sorted[j].Order {
-			return sorted[i].Order < sorted[j].Order
-		}
-		// Then by priority level
-		pi := roadmap.PriorityOrder(sorted[i].Priority)
-		pj := roadmap.PriorityOrder(sorted[j].Priority)
-		if pi != pj {
-			return pi < pj
-		}
-		// Then alphabetically
-		return sorted[i].Title < sorted[j].Title
-	})
-
-	for i, item := range sorted {
-		if item.Status == roadmap.StatusCompleted && !opts.ShowCompleted {
-			continue
-		}
-		renderItem(sb, item, i+1, r, opts)
-	}
-}
-
-func renderItem(sb *strings.Builder, item roadmap.Item, num int, r *roadmap.Roadmap, opts Options) {
-	// Determine if item is "done" - either completed status or all tasks done
-	isComplete := isItemComplete(item)
-
-	// Item header with checkbox
+	// Task header with checkbox
 	var title string
 	if opts.UseCheckboxes {
 		checkbox := "[ ]"
@@ -869,188 +606,48 @@ func renderItem(sb *strings.Builder, item roadmap.Item, num int, r *roadmap.Road
 			checkbox = "[x]"
 		}
 		if opts.NumberItems {
-			title = fmt.Sprintf("%d. %s %s", num, checkbox, item.Title)
+			title = fmt.Sprintf("%d. %s %s", num, checkbox, task.Title)
 		} else {
-			title = fmt.Sprintf("%s %s", checkbox, item.Title)
+			title = fmt.Sprintf("%s %s", checkbox, task.Title)
 		}
 	} else {
 		if opts.NumberItems {
-			title = fmt.Sprintf("%d. %s", num, item.Title)
+			title = fmt.Sprintf("%d. %s", num, task.Title)
 		} else {
-			title = item.Title
+			title = task.Title
 		}
 	}
-	// Only add emoji suffix if not using checkboxes (avoid redundancy)
+
+	// Add emoji suffix if not using checkboxes
 	if opts.UseEmoji && !opts.UseCheckboxes {
-		title += " " + r.GetStatusEmoji(item.Status)
+		title += " " + tl.GetStatusEmoji(task.Status)
 	}
-	// Add stable anchor for navigation from overview table
-	fmt.Fprintf(sb, "<a id=\"%s\"></a>\n\n", itemSlug(item))
+
+	// Add stable anchor for navigation
+	fmt.Fprintf(sb, "<a id=\"%s\"></a>\n\n", taskSlug(task))
 	fmt.Fprintf(sb, "### %s\n\n", title)
 
 	// Description
-	if item.Description != "" {
-		sb.WriteString(item.Description + "\n\n")
+	if task.Description != "" {
+		sb.WriteString(task.Description + "\n\n")
 	}
 
-	// Version/date info
-	if item.Version != "" {
-		fmt.Fprintf(sb, "**Version:** %s", item.Version)
-		if item.CompletedDate != "" {
-			fmt.Fprintf(sb, " (%s)", item.CompletedDate)
-		}
-		sb.WriteString("\n\n")
-	} else if item.TargetVersion != "" {
-		fmt.Fprintf(sb, "**Target:** %s", item.TargetVersion)
-		if item.TargetQuarter != "" {
-			fmt.Fprintf(sb, " (%s)", item.TargetQuarter)
-		}
-		sb.WriteString("\n\n")
-	} else if item.TargetQuarter != "" {
-		fmt.Fprintf(sb, "**Target:** %s\n\n", item.TargetQuarter)
-	}
-
-	// Tasks
-	if len(item.Tasks) > 0 {
-		for _, task := range item.Tasks {
+	// Subtasks
+	if len(task.Subtasks) > 0 {
+		for _, subtask := range task.Subtasks {
 			checkbox := "[ ]"
-			if task.Completed {
+			if subtask.Completed {
 				checkbox = "[x]"
 			}
 			if opts.UseCheckboxes {
-				line := fmt.Sprintf("- %s %s", checkbox, task.Description)
-				if task.FilePath != "" {
-					line += fmt.Sprintf(" (`%s`)", task.FilePath)
-				}
-				sb.WriteString(line + "\n")
+				fmt.Fprintf(sb, "- %s %s\n", checkbox, subtask.Description)
 			} else {
 				prefix := "- "
-				if task.Completed {
+				if subtask.Completed {
 					prefix = "- ✅ "
 				}
-				sb.WriteString(prefix + task.Description + "\n")
+				sb.WriteString(prefix + subtask.Description + "\n")
 			}
-		}
-		sb.WriteString("\n")
-	}
-
-	// Content blocks
-	for _, block := range item.Content {
-		renderContentBlock(sb, block)
-	}
-}
-
-func renderContentBlock(sb *strings.Builder, block roadmap.ContentBlock) {
-	switch block.Type {
-	case roadmap.ContentTypeText:
-		sb.WriteString(block.Value + "\n\n")
-
-	case roadmap.ContentTypeCode:
-		lang := block.Language
-		if lang == "" {
-			lang = ""
-		}
-		fmt.Fprintf(sb, "```%s\n%s\n```\n\n", lang, block.Value)
-
-	case roadmap.ContentTypeDiagram:
-		sb.WriteString("```\n" + block.Value + "\n```\n\n")
-
-	case roadmap.ContentTypeTable:
-		if len(block.Headers) > 0 {
-			sb.WriteString("| " + strings.Join(block.Headers, " | ") + " |\n")
-			sb.WriteString("|" + strings.Repeat("--------|", len(block.Headers)) + "\n")
-			for _, row := range block.Rows {
-				sb.WriteString("| " + strings.Join(row, " | ") + " |\n")
-			}
-			sb.WriteString("\n")
-		}
-
-	case roadmap.ContentTypeList:
-		for _, item := range block.Items {
-			sb.WriteString("- " + item + "\n")
-		}
-		sb.WriteString("\n")
-
-	case roadmap.ContentTypeBlockquote:
-		// Prefix each line with "> "
-		lines := strings.Split(block.Value, "\n")
-		for _, line := range lines {
-			sb.WriteString("> " + line + "\n")
-		}
-		sb.WriteString("\n")
-	}
-}
-
-func renderSections(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
-	// Filter out overview (already rendered)
-	sections := make([]roadmap.Section, 0)
-	for _, s := range r.Sections {
-		if s.ID != "overview" {
-			sections = append(sections, s)
-		}
-	}
-
-	// Sort by order
-	sort.Slice(sections, func(i, j int) bool {
-		return sections[i].Order < sections[j].Order
-	})
-
-	for _, section := range sections {
-		renderSection(sb, section, r, opts)
-	}
-}
-
-func renderSection(sb *strings.Builder, section roadmap.Section, r *roadmap.Roadmap, opts Options) {
-	renderSectionHeading(sb, section.Title, r.Project, opts)
-	for _, block := range section.Content {
-		renderContentBlock(sb, block)
-	}
-}
-
-func renderVersionHistory(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
-	renderSectionHeading(sb, "Version History", r.Project, opts)
-	sb.WriteString("| Version | Date | Status | Summary |\n")
-	sb.WriteString("|---------|------|--------|--------|\n")
-	for _, v := range r.VersionHistory {
-		date := v.Date
-		if date == "" {
-			date = "TBD"
-		}
-		status := ""
-		if opts.UseEmoji && v.Status != "" {
-			status = r.GetStatusEmoji(v.Status)
-		} else if v.Status != "" {
-			status = string(v.Status)
-		}
-		fmt.Fprintf(sb, "| %s | %s | %s | %s |\n", v.Version, date, status, v.Summary)
-	}
-	sb.WriteString("\n")
-}
-
-func renderDependencies(sb *strings.Builder, r *roadmap.Roadmap, opts Options) {
-	if r.Dependencies == nil {
-		return
-	}
-
-	renderSectionHeading(sb, "Dependencies", r.Project, opts)
-
-	if len(r.Dependencies.External) > 0 {
-		sb.WriteString("### External\n\n")
-		sb.WriteString("| Name | Status | Note |\n")
-		sb.WriteString("|------|--------|------|\n")
-		for _, dep := range r.Dependencies.External {
-			fmt.Fprintf(sb, "| %s | %s | %s |\n", dep.Name, dep.Status, dep.Note)
-		}
-		sb.WriteString("\n")
-	}
-
-	if len(r.Dependencies.Internal) > 0 {
-		sb.WriteString("### Internal\n\n")
-		sb.WriteString("| Package | Depends On |\n")
-		sb.WriteString("|---------|------------|\n")
-		for _, dep := range r.Dependencies.Internal {
-			deps := strings.Join(dep.DependsOn, ", ")
-			fmt.Fprintf(sb, "| %s | %s |\n", dep.Package, deps)
 		}
 		sb.WriteString("\n")
 	}

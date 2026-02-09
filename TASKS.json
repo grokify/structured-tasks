@@ -426,12 +426,23 @@
     {
       "id": "multi-project",
       "title": "Multi-project aggregation",
-      "description": "Aggregate roadmaps from multiple projects",
+      "description": "Aggregate roadmaps from multiple projects into a unified view",
       "status": "future",
       "phase": "future",
       "area": "core",
       "type": "Added",
-      "priority": "low"
+      "priority": "medium",
+      "depends_on": ["cross-project-deps"]
+    },
+    {
+      "id": "cross-project-deps",
+      "title": "Cross-project dependency references",
+      "description": "Allow items to reference dependencies in other project roadmaps via repository URI (e.g., depends_on: ['github.com/grokify/releasekit#git-repo-type'])",
+      "status": "future",
+      "phase": "future",
+      "area": "core",
+      "type": "Added",
+      "priority": "medium"
     },
     {
       "id": "overdue-alerts",

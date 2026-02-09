@@ -1,11 +1,11 @@
-package roadmap
+package tasks
 
 import (
 	"errors"
 	"fmt"
 )
 
-// Sentinel errors for roadmap operations.
+// Sentinel errors for task list operations.
 var (
 	// ErrInvalidIRVersion indicates an unsupported IR version.
 	ErrInvalidIRVersion = errors.New("invalid or unsupported IR version")

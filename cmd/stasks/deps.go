@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/grokify/structured-roadmap/renderer"
-	"github.com/grokify/structured-roadmap/roadmap"
+	"github.com/grokify/structured-tasks/renderer"
+	"github.com/grokify/structured-tasks/tasks"
 	"github.com/spf13/cobra"
 )
 
@@ -25,7 +25,7 @@ func init() {
 func runDeps(cmd *cobra.Command, args []string) error {
 	path := args[0]
 
-	r, err := roadmap.ParseFile(path)
+	r, err := tasks.ParseFile(path)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
@@ -34,7 +34,7 @@ func runDeps(cmd *cobra.Command, args []string) error {
 	out := cmd.OutOrStdout()
 
 	if len(deps.Edges) == 0 {
-		fmt.Fprintln(cmd.ErrOrStderr(), "No dependencies found in roadmap")
+		fmt.Fprintln(cmd.ErrOrStderr(), "No dependencies found in task list")
 		return nil
 	}
 

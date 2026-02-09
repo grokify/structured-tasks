@@ -30,8 +30,8 @@ func TestValidateCommand(t *testing.T) {
 	validJSON := `{
 		"ir_version": "1.0",
 		"project": "test-project",
-		"items": [
-			{"id": "item-1", "title": "Feature 1", "status": "completed"}
+		"tasks": [
+			{"id": "task-1", "title": "Feature 1", "status": "completed"}
 		]
 	}`
 	validFile := filepath.Join(tmpDir, "valid.json")
@@ -75,7 +75,7 @@ func TestValidateCommand(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a fresh root command for each test
-			cmd := &cobra.Command{Use: "scroadmap"}
+			cmd := &cobra.Command{Use: "stasks"}
 			cmd.AddCommand(validateCmd)
 
 			_, stderr, err := executeCommand(cmd, tt.args...)
@@ -96,19 +96,19 @@ func TestGenerateCommand(t *testing.T) {
 		"ir_version": "1.0",
 		"project": "Test Project",
 		"areas": [
-			{"id": "core", "name": "Core Features", "priority": 1}
+			{"id": "core", "name": "Core Features"}
 		],
-		"items": [
-			{"id": "item-1", "title": "Feature 1", "status": "completed", "area": "core"}
+		"tasks": [
+			{"id": "task-1", "title": "Feature 1", "status": "completed", "area": "core"}
 		]
 	}`
-	inputFile := filepath.Join(tmpDir, "ROADMAP.json")
+	inputFile := filepath.Join(tmpDir, "TASKS.json")
 	if err := os.WriteFile(inputFile, []byte(validJSON), 0600); err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 
 	t.Run("generate to stdout", func(t *testing.T) {
-		cmd := &cobra.Command{Use: "scroadmap"}
+		cmd := &cobra.Command{Use: "stasks"}
 		cmd.AddCommand(generateCmd)
 
 		stdout, _, err := executeCommand(cmd, "generate", "-i", inputFile)
@@ -116,10 +116,10 @@ func TestGenerateCommand(t *testing.T) {
 			t.Fatalf("generate failed: %v", err)
 		}
 
-		if !strings.Contains(stdout, "# Roadmap") {
-			t.Error("Expected roadmap title in output")
+		if !strings.Contains(stdout, "# Task List") {
+			t.Error("Expected task list title in output")
 		}
-		if !strings.Contains(stdout, "## Core Features") {
+		if !strings.Contains(stdout, "Core Features") {
 			t.Error("Expected area heading in output")
 		}
 		if !strings.Contains(stdout, "[x]") {
@@ -128,9 +128,9 @@ func TestGenerateCommand(t *testing.T) {
 	})
 
 	t.Run("generate to file", func(t *testing.T) {
-		outputFile := filepath.Join(tmpDir, "ROADMAP.md")
+		outputFile := filepath.Join(tmpDir, "TASKS.md")
 
-		cmd := &cobra.Command{Use: "scroadmap"}
+		cmd := &cobra.Command{Use: "stasks"}
 		cmd.AddCommand(generateCmd)
 
 		_, _, err := executeCommand(cmd, "generate", "-i", inputFile, "-o", outputFile)
@@ -143,8 +143,8 @@ func TestGenerateCommand(t *testing.T) {
 			t.Fatalf("Failed to read output file: %v", err)
 		}
 
-		if !strings.Contains(string(content), "# Roadmap") {
-			t.Error("Expected roadmap title in output file")
+		if !strings.Contains(string(content), "# Task List") {
+			t.Error("Expected task list title in output file")
 		}
 	})
 
@@ -152,10 +152,10 @@ func TestGenerateCommand(t *testing.T) {
 		// Reset global flags
 		genTOC = false
 		genLegend = false
-		genInput = "ROADMAP.json"
+		genInput = "TASKS.json"
 		genOutput = ""
 
-		cmd := &cobra.Command{Use: "scroadmap"}
+		cmd := &cobra.Command{Use: "stasks"}
 		cmd.AddCommand(generateCmd)
 
 		stdout, _, err := executeCommand(cmd, "generate", "-i", inputFile, "--toc", "--legend")
@@ -178,18 +178,18 @@ func TestStatsCommand(t *testing.T) {
 	validJSON := `{
 		"ir_version": "1.0",
 		"project": "Test Project",
-		"items": [
-			{"id": "1", "title": "Item 1", "status": "completed", "priority": "high"},
-			{"id": "2", "title": "Item 2", "status": "planned", "priority": "medium"},
-			{"id": "3", "title": "Item 3", "status": "planned", "priority": "low"}
+		"tasks": [
+			{"id": "1", "title": "Task 1", "status": "completed"},
+			{"id": "2", "title": "Task 2", "status": "planned"},
+			{"id": "3", "title": "Task 3", "status": "planned"}
 		]
 	}`
-	inputFile := filepath.Join(tmpDir, "ROADMAP.json")
+	inputFile := filepath.Join(tmpDir, "TASKS.json")
 	if err := os.WriteFile(inputFile, []byte(validJSON), 0600); err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 
-	cmd := &cobra.Command{Use: "scroadmap"}
+	cmd := &cobra.Command{Use: "stasks"}
 	cmd.AddCommand(statsCmd)
 
 	stdout, _, err := executeCommand(cmd, "stats", inputFile)
@@ -199,14 +199,14 @@ func TestStatsCommand(t *testing.T) {
 
 	expectedOutputs := []string{
 		"Test Project",
-		"Total items: 3",
-		"Completed: 1",
-		"Planned: 2",
+		"Total tasks: 3",
+		"Completed",
+		"Planned",
 	}
 
 	for _, expected := range expectedOutputs {
 		if !strings.Contains(stdout, expected) {
-			t.Errorf("Expected output to contain %q", expected)
+			t.Errorf("Expected output to contain %q, got:\n%s", expected, stdout)
 		}
 	}
 }
@@ -217,19 +217,19 @@ func TestDepsCommand(t *testing.T) {
 	validJSON := `{
 		"ir_version": "1.0",
 		"project": "Test Project",
-		"items": [
-			{"id": "item-1", "title": "Foundation", "status": "completed"},
-			{"id": "item-2", "title": "Feature A", "status": "planned", "depends_on": ["item-1"]},
-			{"id": "item-3", "title": "Feature B", "status": "planned", "depends_on": ["item-1", "item-2"]}
+		"tasks": [
+			{"id": "task-1", "title": "Foundation", "status": "completed"},
+			{"id": "task-2", "title": "Feature A", "status": "planned", "depends_on": ["task-1"]},
+			{"id": "task-3", "title": "Feature B", "status": "planned", "depends_on": ["task-1", "task-2"]}
 		]
 	}`
-	inputFile := filepath.Join(tmpDir, "ROADMAP.json")
+	inputFile := filepath.Join(tmpDir, "TASKS.json")
 	if err := os.WriteFile(inputFile, []byte(validJSON), 0600); err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 
 	t.Run("mermaid format", func(t *testing.T) {
-		cmd := &cobra.Command{Use: "scroadmap"}
+		cmd := &cobra.Command{Use: "stasks"}
 		cmd.AddCommand(depsCmd)
 
 		stdout, _, err := executeCommand(cmd, "deps", inputFile, "--format", "mermaid")
@@ -246,7 +246,7 @@ func TestDepsCommand(t *testing.T) {
 	})
 
 	t.Run("dot format", func(t *testing.T) {
-		cmd := &cobra.Command{Use: "scroadmap"}
+		cmd := &cobra.Command{Use: "stasks"}
 		cmd.AddCommand(depsCmd)
 
 		stdout, _, err := executeCommand(cmd, "deps", inputFile, "--format", "dot")

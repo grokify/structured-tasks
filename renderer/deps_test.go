@@ -5,33 +5,33 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/grokify/structured-roadmap/roadmap"
+	"github.com/grokify/structured-tasks/tasks"
 )
 
 func TestBuildDependencyGraph(t *testing.T) {
-	r := &roadmap.Roadmap{
-		Items: []roadmap.Item{
-			{ID: "item-1", Title: "First Item", Status: roadmap.StatusCompleted},
-			{ID: "item-2", Title: "Second Item", Status: roadmap.StatusPlanned, DependsOn: []string{"item-1"}},
-			{ID: "item-3", Title: "Third Item", Status: roadmap.StatusFuture, DependsOn: []string{"item-1", "item-2"}},
+	tl := &tasks.TaskList{
+		Tasks: []tasks.Task{
+			{ID: "task-1", Title: "First Task", Status: tasks.StatusCompleted},
+			{ID: "task-2", Title: "Second Task", Status: tasks.StatusPlanned, DependsOn: []string{"task-1"}},
+			{ID: "task-3", Title: "Third Task", Status: tasks.StatusFuture, DependsOn: []string{"task-1", "task-2"}},
 		},
 	}
 
-	deps := BuildDependencyGraph(r)
+	deps := BuildDependencyGraph(tl)
 
 	if len(deps.Edges) != 3 {
 		t.Errorf("expected 3 edges, got %d", len(deps.Edges))
 	}
 
-	if len(deps.ItemMap) != 3 {
-		t.Errorf("expected 3 items in map, got %d", len(deps.ItemMap))
+	if len(deps.TaskMap) != 3 {
+		t.Errorf("expected 3 tasks in map, got %d", len(deps.TaskMap))
 	}
 
 	// Verify edges
 	expectedEdges := []Edge{
-		{From: "item-1", To: "item-2"},
-		{From: "item-1", To: "item-3"},
-		{From: "item-2", To: "item-3"},
+		{From: "task-1", To: "task-2"},
+		{From: "task-1", To: "task-3"},
+		{From: "task-2", To: "task-3"},
 	}
 
 	for i, expected := range expectedEdges {
@@ -42,14 +42,14 @@ func TestBuildDependencyGraph(t *testing.T) {
 }
 
 func TestBuildDependencyGraphEmpty(t *testing.T) {
-	r := &roadmap.Roadmap{
-		Items: []roadmap.Item{
-			{ID: "item-1", Title: "First Item"},
-			{ID: "item-2", Title: "Second Item"},
+	tl := &tasks.TaskList{
+		Tasks: []tasks.Task{
+			{ID: "task-1", Title: "First Task"},
+			{ID: "task-2", Title: "Second Task"},
 		},
 	}
 
-	deps := BuildDependencyGraph(r)
+	deps := BuildDependencyGraph(tl)
 
 	if len(deps.Edges) != 0 {
 		t.Errorf("expected 0 edges, got %d", len(deps.Edges))
@@ -57,17 +57,17 @@ func TestBuildDependencyGraphEmpty(t *testing.T) {
 }
 
 func TestRenderMermaid(t *testing.T) {
-	r := &roadmap.Roadmap{
+	tl := &tasks.TaskList{
 		Project: "test-project",
-		Items: []roadmap.Item{
-			{ID: "item1", Title: "First Item", Status: roadmap.StatusCompleted},
-			{ID: "item2", Title: "Second Item", Status: roadmap.StatusPlanned, DependsOn: []string{"item1"}},
+		Tasks: []tasks.Task{
+			{ID: "task1", Title: "First Task", Status: tasks.StatusCompleted},
+			{ID: "task2", Title: "Second Task", Status: tasks.StatusPlanned, DependsOn: []string{"task1"}},
 		},
 	}
 
-	deps := BuildDependencyGraph(r)
+	deps := BuildDependencyGraph(tl)
 	var buf bytes.Buffer
-	RenderMermaid(&buf, r, deps)
+	RenderMermaid(&buf, tl, deps)
 
 	output := buf.String()
 
@@ -78,8 +78,8 @@ func TestRenderMermaid(t *testing.T) {
 	if !strings.Contains(output, "graph TD") {
 		t.Error("expected graph TD directive")
 	}
-	if !strings.Contains(output, "item1 --> item2") {
-		t.Error("expected edge from item1 to item2")
+	if !strings.Contains(output, "task1 --> task2") {
+		t.Error("expected edge from task1 to task2")
 	}
 	if !strings.Contains(output, "```") {
 		t.Error("expected closing code fence")
@@ -87,17 +87,17 @@ func TestRenderMermaid(t *testing.T) {
 }
 
 func TestRenderDOT(t *testing.T) {
-	r := &roadmap.Roadmap{
+	tl := &tasks.TaskList{
 		Project: "test-project",
-		Items: []roadmap.Item{
-			{ID: "item1", Title: "First Item", Status: roadmap.StatusCompleted},
-			{ID: "item2", Title: "Second Item", Status: roadmap.StatusInProgress, DependsOn: []string{"item1"}},
+		Tasks: []tasks.Task{
+			{ID: "task1", Title: "First Task", Status: tasks.StatusCompleted},
+			{ID: "task2", Title: "Second Task", Status: tasks.StatusInProgress, DependsOn: []string{"task1"}},
 		},
 	}
 
-	deps := BuildDependencyGraph(r)
+	deps := BuildDependencyGraph(tl)
 	var buf bytes.Buffer
-	RenderDOT(&buf, r, deps)
+	RenderDOT(&buf, tl, deps)
 
 	output := buf.String()
 
@@ -108,26 +108,26 @@ func TestRenderDOT(t *testing.T) {
 	if !strings.Contains(output, "rankdir=LR") {
 		t.Error("expected rankdir directive")
 	}
-	if !strings.Contains(output, "item1 -> item2") {
-		t.Error("expected edge from item1 to item2")
+	if !strings.Contains(output, "task1 -> task2") {
+		t.Error("expected edge from task1 to task2")
 	}
 	if !strings.Contains(output, `color="green"`) {
-		t.Error("expected green color for completed item")
+		t.Error("expected green color for completed task")
 	}
 	if !strings.Contains(output, `color="orange"`) {
-		t.Error("expected orange color for in-progress item")
+		t.Error("expected orange color for in-progress task")
 	}
 }
 
 func TestStatusShape(t *testing.T) {
 	tests := []struct {
-		status   roadmap.Status
+		status   tasks.Status
 		expected [2]string
 	}{
-		{roadmap.StatusCompleted, [2]string{"([", "])"}},
-		{roadmap.StatusInProgress, [2]string{"{{", "}}"}},
-		{roadmap.StatusPlanned, [2]string{"[", "]"}},
-		{roadmap.StatusFuture, [2]string{"((", "))"}},
+		{tasks.StatusCompleted, [2]string{"([", "])"}},
+		{tasks.StatusInProgress, [2]string{"{{", "}}"}},
+		{tasks.StatusPlanned, [2]string{"[", "]"}},
+		{tasks.StatusFuture, [2]string{"((", "))"}},
 		{"unknown", [2]string{"((", "))"}},
 	}
 
@@ -141,13 +141,13 @@ func TestStatusShape(t *testing.T) {
 
 func TestStatusColor(t *testing.T) {
 	tests := []struct {
-		status   roadmap.Status
+		status   tasks.Status
 		expected string
 	}{
-		{roadmap.StatusCompleted, "green"},
-		{roadmap.StatusInProgress, "orange"},
-		{roadmap.StatusPlanned, "blue"},
-		{roadmap.StatusFuture, "gray"},
+		{tasks.StatusCompleted, "green"},
+		{tasks.StatusInProgress, "orange"},
+		{tasks.StatusPlanned, "blue"},
+		{tasks.StatusFuture, "gray"},
 		{"unknown", "gray"},
 	}
 

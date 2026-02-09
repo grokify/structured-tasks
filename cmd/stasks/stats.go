@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/grokify/structured-roadmap/roadmap"
+	"github.com/grokify/structured-tasks/tasks"
 	"github.com/spf13/cobra"
 )
 
 var statsCmd = &cobra.Command{
 	Use:   "stats <file>",
-	Short: "Show roadmap statistics",
-	Long:  `Display statistics about items, statuses, and categories in a roadmap.`,
+	Short: "Show task list statistics",
+	Long:  `Display statistics about tasks, statuses, and categories in a task list.`,
 	Args:  cobra.ExactArgs(1),
 	RunE:  runStats,
 }
@@ -19,22 +19,21 @@ var statsCmd = &cobra.Command{
 func runStats(cmd *cobra.Command, args []string) error {
 	path := args[0]
 
-	r, err := roadmap.ParseFile(path)
+	tl, err := tasks.ParseFile(path)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
-	stats := r.Stats()
+	stats := tl.Stats()
 	out := cmd.OutOrStdout()
 
-	fmt.Fprintf(out, "Roadmap: %s\n", r.Project)
-	fmt.Fprintf(out, "Total items: %d\n\n", stats.Total)
+	fmt.Fprintf(out, "Task List: %s\n", tl.Project)
+	fmt.Fprintf(out, "Total tasks: %d\n\n", stats.Total)
 
 	// Status breakdown
 	fmt.Fprintln(out, "By Status:")
-	statusOrder := []roadmap.Status{roadmap.StatusCompleted, roadmap.StatusInProgress, roadmap.StatusPlanned, roadmap.StatusFuture}
-	legend := r.GetLegend()
-	for _, status := range statusOrder {
+	legend := tl.GetLegend()
+	for _, status := range tasks.StatusOrder() {
 		count := stats.ByStatus[status]
 		if count > 0 {
 			pct := float64(count) / float64(stats.Total) * 100
@@ -43,23 +42,9 @@ func runStats(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Priority breakdown
-	if len(stats.ByPriority) > 0 {
-		fmt.Fprintln(out, "\nBy Priority:")
-		priorityOrder := []roadmap.Priority{roadmap.PriorityCritical, roadmap.PriorityHigh, roadmap.PriorityMedium, roadmap.PriorityLow}
-		for _, priority := range priorityOrder {
-			count := stats.ByPriority[priority]
-			if count > 0 {
-				pct := float64(count) / float64(stats.Total) * 100
-				fmt.Fprintf(out, "  %s: %d (%.0f%%)\n", roadmap.PriorityLabel(priority), count, pct)
-			}
-		}
-	}
-
 	// Area breakdown
 	if len(stats.ByArea) > 0 {
 		fmt.Fprintln(out, "\nBy Area:")
-		// Sort areas by count
 		type areaCount struct {
 			name  string
 			count int
@@ -74,7 +59,7 @@ func runStats(cmd *cobra.Command, args []string) error {
 		for _, a := range areas {
 			// Find area name
 			name := a.name
-			for _, area := range r.Areas {
+			for _, area := range tl.Areas {
 				if area.ID == a.name {
 					name = area.Name
 					break
@@ -87,7 +72,6 @@ func runStats(cmd *cobra.Command, args []string) error {
 	// Type breakdown
 	if len(stats.ByType) > 0 {
 		fmt.Fprintln(out, "\nBy Type:")
-		// Sort types by count
 		type typeCount struct {
 			name  string
 			count int
@@ -105,20 +89,25 @@ func runStats(cmd *cobra.Command, args []string) error {
 	}
 
 	// Phase breakdown
-	if len(r.Phases) > 0 {
+	phases := tl.PhaseNumbers()
+	if len(phases) > 0 {
 		fmt.Fprintln(out, "\nBy Phase:")
-		itemsByPhase := r.ItemsByPhase()
-		for _, phase := range r.Phases {
-			items := itemsByPhase[phase.ID]
-			status := ""
-			if phase.Status != "" {
-				status = " " + r.GetStatusEmoji(phase.Status)
-			}
-			fmt.Fprintf(out, "  %s%s: %d items\n", phase.Name, status, len(items))
+		tasksByPhase := tl.TasksByPhase()
+		for _, phase := range phases {
+			phaseTasks := tasksByPhase[phase]
+			fmt.Fprintf(out, "  Phase %d: %d tasks\n", phase, len(phaseTasks))
+		}
+		// Unphased tasks
+		if unphasedTasks := tasksByPhase[0]; len(unphasedTasks) > 0 {
+			fmt.Fprintf(out, "  Unphased: %d tasks\n", len(unphasedTasks))
 		}
 	}
 
 	// Progress
-	fmt.Fprintf(out, "\nProgress: %.0f%% complete\n", stats.CompletedPercent())
+	completedPct := 0.0
+	if stats.Total > 0 {
+		completedPct = float64(stats.CompletedCount()) / float64(stats.Total) * 100
+	}
+	fmt.Fprintf(out, "\nProgress: %.0f%% complete\n", completedPct)
 	return nil
 }

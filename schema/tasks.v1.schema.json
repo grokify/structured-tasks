@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/grokify/structured-roadmap/schema/roadmap.v1.schema.json",
-  "title": "Structured Roadmap IR",
-  "description": "Intermediate Representation for project roadmaps",
+  "$id": "https://github.com/grokify/structured-tasks/schema/tasks.v1.schema.json",
+  "title": "Structured Tasks IR",
+  "description": "Intermediate Representation for project task lists",
   "type": "object",
   "required": ["ir_version", "project"],
   "properties": {
@@ -48,7 +48,7 @@
     },
     "items": {
       "type": "array",
-      "description": "Roadmap items",
+      "description": "Task list items",
       "items": {
         "$ref": "#/definitions/item"
       }

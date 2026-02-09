@@ -3,14 +3,14 @@ package main
 import (
 	"fmt"
 
-	"github.com/grokify/structured-roadmap/roadmap"
+	"github.com/grokify/structured-tasks/tasks"
 	"github.com/spf13/cobra"
 )
 
 var validateCmd = &cobra.Command{
 	Use:   "validate <file>",
-	Short: "Validate a ROADMAP.json file",
-	Long:  `Validate a ROADMAP.json file against the schema and check for errors.`,
+	Short: "Validate a TASKS.json file",
+	Long:  `Validate a TASKS.json file against the schema and check for errors.`,
 	Args:  cobra.ExactArgs(1),
 	RunE:  runValidate,
 }
@@ -18,19 +18,18 @@ var validateCmd = &cobra.Command{
 func runValidate(cmd *cobra.Command, args []string) error {
 	path := args[0]
 
-	r, err := roadmap.ParseFile(path)
+	tl, err := tasks.ParseFile(path)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
-	result := roadmap.Validate(r)
+	result := tasks.Validate(tl)
 
 	if result.Valid {
 		fmt.Fprintf(cmd.ErrOrStderr(), "✅ %s is valid\n", path)
-		fmt.Fprintf(cmd.ErrOrStderr(), "   Project: %s\n", r.Project)
-		fmt.Fprintf(cmd.ErrOrStderr(), "   Items: %d\n", len(r.Items))
-		fmt.Fprintf(cmd.ErrOrStderr(), "   Phases: %d\n", len(r.Phases))
-		fmt.Fprintf(cmd.ErrOrStderr(), "   Areas: %d\n", len(r.Areas))
+		fmt.Fprintf(cmd.ErrOrStderr(), "   Project: %s\n", tl.Project)
+		fmt.Fprintf(cmd.ErrOrStderr(), "   Tasks: %d\n", len(tl.Tasks))
+		fmt.Fprintf(cmd.ErrOrStderr(), "   Areas: %d\n", len(tl.Areas))
 		return nil
 	}
 

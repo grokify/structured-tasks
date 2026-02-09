@@ -1,4 +1,4 @@
-// Command scroadmap provides CLI tools for structured roadmaps.
+// Command stasks provides CLI tools for structured task lists.
 package main
 
 import (

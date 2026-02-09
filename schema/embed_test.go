@@ -21,8 +21,8 @@ func TestSchemaV1Embedded(t *testing.T) {
 		t.Errorf("Expected JSON Schema draft-07, got %v", schema["$schema"])
 	}
 
-	if schema["title"] != "Structured Roadmap IR" {
-		t.Errorf("Expected title 'Structured Roadmap IR', got %v", schema["title"])
+	if schema["title"] != "Structured Tasks IR" {
+		t.Errorf("Expected title 'Structured Tasks IR', got %v", schema["title"])
 	}
 
 	// Check required fields are defined

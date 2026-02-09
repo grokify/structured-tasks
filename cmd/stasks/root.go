@@ -14,24 +14,24 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "sroadmap",
-	Short: "Structured Roadmap - machine-readable project roadmaps",
-	Long: `sroadmap is a CLI tool for managing structured roadmaps.
+	Use:   "stasks",
+	Short: "Structured Tasks - machine-readable project task lists",
+	Long: `stasks is a CLI tool for managing structured task lists.
 
-It provides commands to validate, generate, and analyze ROADMAP.json files,
-producing deterministic ROADMAP.md output.
+It provides commands to validate, generate, and analyze TASKS.json files,
+producing deterministic TASKS.md output.
 
 Example usage:
-  sroadmap validate ROADMAP.json
-  sroadmap generate -i ROADMAP.json -o ROADMAP.md
-  sroadmap stats ROADMAP.json`,
+  stasks validate TASKS.json
+  stasks generate -i TASKS.json -o TASKS.md
+  stasks stats TASKS.json`,
 }
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version information",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("sroadmap %s\n", version)
+		fmt.Printf("stasks %s\n", version)
 		fmt.Printf("  commit: %s\n", commit)
 		fmt.Printf("  built:  %s\n", date)
 	},

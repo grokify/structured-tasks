@@ -5,10 +5,10 @@ import (
 	"io"
 	"strings"
 
-	"github.com/grokify/structured-roadmap/roadmap"
+	"github.com/grokify/structured-tasks/tasks"
 )
 
-// Edge represents a dependency relationship between two items.
+// Edge represents a dependency relationship between two tasks.
 type Edge struct {
 	From, To string
 }
@@ -16,29 +16,29 @@ type Edge struct {
 // DepsResult contains the dependency graph data.
 type DepsResult struct {
 	Edges   []Edge
-	ItemMap map[string]roadmap.Item
+	TaskMap map[string]tasks.Task
 }
 
-// BuildDependencyGraph extracts dependency edges from a roadmap.
-func BuildDependencyGraph(r *roadmap.Roadmap) DepsResult {
+// BuildDependencyGraph extracts dependency edges from a task list.
+func BuildDependencyGraph(tl *tasks.TaskList) DepsResult {
 	var edges []Edge
-	itemMap := make(map[string]roadmap.Item)
+	taskMap := make(map[string]tasks.Task)
 
-	for _, item := range r.Items {
-		itemMap[item.ID] = item
-		for _, dep := range item.DependsOn {
-			edges = append(edges, Edge{From: dep, To: item.ID})
+	for _, task := range tl.Tasks {
+		taskMap[task.ID] = task
+		for _, dep := range task.DependsOn {
+			edges = append(edges, Edge{From: dep, To: task.ID})
 		}
 	}
 
 	return DepsResult{
 		Edges:   edges,
-		ItemMap: itemMap,
+		TaskMap: taskMap,
 	}
 }
 
 // RenderMermaid renders a dependency graph in Mermaid format.
-func RenderMermaid(w io.Writer, r *roadmap.Roadmap, deps DepsResult) {
+func RenderMermaid(w io.Writer, tl *tasks.TaskList, deps DepsResult) {
 	fmt.Fprintln(w, "```mermaid")
 	fmt.Fprintln(w, "graph TD")
 
@@ -46,17 +46,17 @@ func RenderMermaid(w io.Writer, r *roadmap.Roadmap, deps DepsResult) {
 	seen := make(map[string]bool)
 	for _, e := range deps.Edges {
 		if !seen[e.From] {
-			item := deps.ItemMap[e.From]
-			label := sanitizeMermaid(item.Title)
-			shape := StatusShape(item.Status)
+			task := deps.TaskMap[e.From]
+			label := sanitizeMermaid(task.Title)
+			shape := StatusShape(task.Status)
 			fmt.Fprintf(w, "    %s%s%s\n", e.From, shape[0], label)
 			fmt.Fprintf(w, "    %s%s\n", e.From, shape[1])
 			seen[e.From] = true
 		}
 		if !seen[e.To] {
-			item := deps.ItemMap[e.To]
-			label := sanitizeMermaid(item.Title)
-			shape := StatusShape(item.Status)
+			task := deps.TaskMap[e.To]
+			label := sanitizeMermaid(task.Title)
+			shape := StatusShape(task.Status)
 			fmt.Fprintf(w, "    %s%s%s\n", e.To, shape[0], label)
 			fmt.Fprintf(w, "    %s%s\n", e.To, shape[1])
 			seen[e.To] = true
@@ -74,8 +74,8 @@ func RenderMermaid(w io.Writer, r *roadmap.Roadmap, deps DepsResult) {
 }
 
 // RenderDOT renders a dependency graph in Graphviz DOT format.
-func RenderDOT(w io.Writer, r *roadmap.Roadmap, deps DepsResult) {
-	fmt.Fprintf(w, "digraph \"%s\" {\n", r.Project)
+func RenderDOT(w io.Writer, tl *tasks.TaskList, deps DepsResult) {
+	fmt.Fprintf(w, "digraph \"%s\" {\n", tl.Project)
 	fmt.Fprintln(w, "    rankdir=LR;")
 	fmt.Fprintln(w, "    node [shape=box];")
 	fmt.Fprintln(w)
@@ -85,9 +85,9 @@ func RenderDOT(w io.Writer, r *roadmap.Roadmap, deps DepsResult) {
 	for _, e := range deps.Edges {
 		for _, id := range []string{e.From, e.To} {
 			if !seen[id] {
-				item := deps.ItemMap[id]
-				color := StatusColor(item.Status)
-				fmt.Fprintf(w, "    %s [label=\"%s\" color=\"%s\"];\n", id, sanitizeDOT(item.Title), color)
+				task := deps.TaskMap[id]
+				color := StatusColor(task.Status)
+				fmt.Fprintf(w, "    %s [label=\"%s\" color=\"%s\"];\n", id, sanitizeDOT(task.Title), color)
 				seen[id] = true
 			}
 		}
@@ -105,13 +105,13 @@ func RenderDOT(w io.Writer, r *roadmap.Roadmap, deps DepsResult) {
 
 // StatusShape returns the Mermaid node shape for a status.
 // Returns [opening, closing] brackets.
-func StatusShape(status roadmap.Status) [2]string {
+func StatusShape(status tasks.Status) [2]string {
 	switch status {
-	case roadmap.StatusCompleted:
+	case tasks.StatusCompleted:
 		return [2]string{"([", "])"} // Stadium/rounded
-	case roadmap.StatusInProgress:
+	case tasks.StatusInProgress:
 		return [2]string{"{{", "}}"} // Hexagon
-	case roadmap.StatusPlanned:
+	case tasks.StatusPlanned:
 		return [2]string{"[", "]"} // Rectangle
 	default:
 		return [2]string{"((", "))"} // Circle
@@ -119,13 +119,13 @@ func StatusShape(status roadmap.Status) [2]string {
 }
 
 // StatusColor returns the DOT node color for a status.
-func StatusColor(status roadmap.Status) string {
+func StatusColor(status tasks.Status) string {
 	switch status {
-	case roadmap.StatusCompleted:
+	case tasks.StatusCompleted:
 		return "green"
-	case roadmap.StatusInProgress:
+	case tasks.StatusInProgress:
 		return "orange"
-	case roadmap.StatusPlanned:
+	case tasks.StatusPlanned:
 		return "blue"
 	default:
 		return "gray"

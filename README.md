@@ -1,4 +1,4 @@
-# Structured Roadmap
+# Structured Tasks
 
 [![Build Status][build-status-svg]][build-status-url]
 [![Lint Status][lint-status-svg]][lint-status-url]
@@ -8,15 +8,15 @@
 [![Visualization][viz-svg]][viz-url]
 [![License][license-svg]][license-url]
 
-Structured Roadmap provides a machine-readable JSON intermediate representation (IR) for project roadmaps, with deterministic Markdown generation. It is modeled after [Structured Changelog](https://github.com/grokify/structured-changelog).
+Structured Tasks provides a machine-readable JSON intermediate representation (IR) for project task lists, with deterministic Markdown generation. It is modeled after [Structured Changelog](https://github.com/grokify/structured-changelog).
 
 ## Features
 
-- **JSON IR** - Machine-readable roadmap format with rich metadata
+- **JSON IR** - Machine-readable task list format with rich metadata
 - **Deterministic output** - Same JSON always produces identical Markdown
 - **Two-dimensional categorization** - Area (project component) + Type (change type)
 - **Multiple grouping strategies** - Group by area, type, phase, status, quarter, or priority
-- **Phased roadmaps** - Support for large projects with phases and area sub-sections
+- **Phased task lists** - Support for large projects with phases and area sub-sections
 - **Rich content support** - Code blocks, tables, diagrams, lists, and blockquotes
 - **Type validation** - Integrates with [structured-changelog](https://github.com/grokify/structured-changelog) for type consistency
 - **Dependency tracking** - Item dependencies with graph generation
@@ -29,26 +29,26 @@ Structured Roadmap provides a machine-readable JSON intermediate representation 
 
 ```bash
 brew tap grokify/tap
-brew install structured-roadmap
+brew install structured-tasks
 ```
 
-This installs the `sroadmap` CLI (also available as `structured-roadmap`).
+This installs the `stasks` CLI (also available as `structured-tasks`).
 
 ### Go Install
 
 ```bash
-go install github.com/grokify/structured-roadmap/cmd/sroadmap@latest
+go install github.com/grokify/structured-tasks/cmd/stasks@latest
 ```
 
 ### Go Library
 
 ```bash
-go get github.com/grokify/structured-roadmap
+go get github.com/grokify/structured-tasks
 ```
 
 ## Quick Start
 
-### Create a ROADMAP.json
+### Create a TASKS.json
 
 ```json
 {
@@ -86,50 +86,50 @@ go get github.com/grokify/structured-roadmap
 ### Generate Markdown
 
 ```bash
-sroadmap generate -i ROADMAP.json -o ROADMAP.md
+stasks generate -i TASKS.json -o TASKS.md
 ```
 
 ### Validate
 
 ```bash
-sroadmap validate ROADMAP.json
+stasks validate TASKS.json
 ```
 
 ### Show Statistics
 
 ```bash
-sroadmap stats ROADMAP.json
+stasks stats TASKS.json
 ```
 
 ### Generate Dependency Graph
 
 ```bash
-sroadmap deps ROADMAP.json --format mermaid
+stasks deps TASKS.json --format mermaid
 ```
 
 ## CLI Commands
 
 ### validate
 
-Validate a ROADMAP.json file against the schema.
+Validate a TASKS.json file against the schema.
 
 ```bash
-sroadmap validate ROADMAP.json
+stasks validate TASKS.json
 ```
 
 ### generate
 
-Generate ROADMAP.md from ROADMAP.json.
+Generate TASKS.md from TASKS.json.
 
 ```bash
-sroadmap generate -i ROADMAP.json -o ROADMAP.md
+stasks generate -i TASKS.json -o TASKS.md
 ```
 
 Options:
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `-i, --input` | ROADMAP.json | Input JSON file |
+| `-i, --input` | TASKS.json | Input JSON file |
 | `-o, --output` | stdout | Output Markdown file |
 | `--group-by` | area | Grouping: area, type, phase, status, quarter, priority |
 | `--checkboxes` | true | Use [x]/[ ] checkbox syntax |
@@ -145,16 +145,16 @@ Options:
 
 ### stats
 
-Show roadmap statistics.
+Show task list statistics.
 
 ```bash
-sroadmap stats ROADMAP.json
+stasks stats TASKS.json
 ```
 
 Output:
 
 ```
-Roadmap: my-project
+Task List: my-project
 Total items: 10
 
 By Status:
@@ -185,7 +185,7 @@ Progress: 40% complete
 Generate dependency graph in Mermaid or DOT format.
 
 ```bash
-sroadmap deps ROADMAP.json --format mermaid
+stasks deps TASKS.json --format mermaid
 ```
 
 ## JSON IR Schema
@@ -239,7 +239,7 @@ Items can be categorized along two orthogonal dimensions:
 - **Area** is user-defined and groups items by project component
 - **Type** aligns with [structured-changelog](https://github.com/grokify/structured-changelog) change types and is validated against the registry
 
-This allows grouping by area for roadmaps (`--group-by area`) while preserving type information for changelog integration when items are completed.
+This allows grouping by area for task lists (`--group-by area`) while preserving type information for changelog integration when items are completed.
 
 ### Content Block Types
 
@@ -252,9 +252,9 @@ This allows grouping by area for roadmaps (`--group-by area`) while preserving t
 | `list` | items | Bullet list |
 | `blockquote` | value | Blockquote/callout (renders with `>` prefix) |
 
-## Phased Roadmaps (Large Projects)
+## Phased Task Lists (Large Projects)
 
-For large projects with multiple development phases (like [omnistorage](https://github.com/grokify/omnistorage)), use the combination of `phases` and `areas` to create hierarchical roadmaps.
+For large projects with multiple development phases (like [omnistorage](https://github.com/grokify/omnistorage)), use the combination of `phases` and `areas` to create hierarchical task lists.
 
 ### Structure
 
@@ -329,7 +329,7 @@ Phase 2: Extended Interfaces ✅
 When using phases, enable area sub-headings to show logical groupings within each phase:
 
 ```bash
-sroadmap generate -i ROADMAP.json -o ROADMAP.md \
+stasks generate -i TASKS.json -o TASKS.md \
   --group-by phase \
   --area-subheadings \
   --toc
@@ -374,19 +374,19 @@ package main
 
 import (
     "fmt"
-    "github.com/grokify/structured-roadmap/roadmap"
-    "github.com/grokify/structured-roadmap/renderer"
+    "github.com/grokify/structured-tasks/tasks"
+    "github.com/grokify/structured-tasks/renderer"
 )
 
 func main() {
-    // Parse roadmap
-    r, err := roadmap.ParseFile("ROADMAP.json")
+    // Parse task list
+    tl, err := tasks.ParseFile("TASKS.json")
     if err != nil {
         panic(err)
     }
 
     // Validate
-    result := roadmap.Validate(r)
+    result := tasks.Validate(tl)
     if !result.Valid {
         for _, e := range result.Errors {
             fmt.Printf("Error: %s: %s\n", e.Field, e.Message)
@@ -395,14 +395,14 @@ func main() {
     }
 
     // Get statistics
-    stats := r.Stats()
+    stats := tl.Stats()
     fmt.Printf("Progress: %.0f%% complete\n", stats.CompletedPercent())
 
     // Render to Markdown
     opts := renderer.DefaultOptions()
     opts.GroupBy = renderer.GroupByPriority
     opts.ShowTOC = true
-    output := renderer.Render(r, opts)
+    output := renderer.Render(tl, opts)
     fmt.Println(output)
 }
 ```
@@ -416,19 +416,19 @@ func main() {
 
 MIT License - see [LICENSE](LICENSE) for details.
 
- [build-status-svg]: https://github.com/grokify/structured-roadmap/actions/workflows/ci.yaml/badge.svg?branch=main
- [build-status-url]: https://github.com/grokify/structured-roadmap/actions/workflows/ci.yaml
- [lint-status-svg]: https://github.com/grokify/structured-roadmap/actions/workflows/lint.yaml/badge.svg?branch=main
- [lint-status-url]: https://github.com/grokify/structured-roadmap/actions/workflows/lint.yaml
+ [build-status-svg]: https://github.com/grokify/structured-tasks/actions/workflows/ci.yaml/badge.svg?branch=main
+ [build-status-url]: https://github.com/grokify/structured-tasks/actions/workflows/ci.yaml
+ [lint-status-svg]: https://github.com/grokify/structured-tasks/actions/workflows/lint.yaml/badge.svg?branch=main
+ [lint-status-url]: https://github.com/grokify/structured-tasks/actions/workflows/lint.yaml
  [coverage-svg]: https://img.shields.io/badge/coverage-94.9%25-brightgreen
- [coverage-url]: https://github.com/grokify/structured-roadmap
- [goreport-svg]: https://goreportcard.com/badge/github.com/grokify/structured-roadmap
- [goreport-url]: https://goreportcard.com/report/github.com/grokify/structured-roadmap
- [docs-godoc-svg]: https://pkg.go.dev/badge/github.com/grokify/structured-roadmap
- [docs-godoc-url]: https://pkg.go.dev/github.com/grokify/structured-roadmap
+ [coverage-url]: https://github.com/grokify/structured-tasks
+ [goreport-svg]: https://goreportcard.com/badge/github.com/grokify/structured-tasks
+ [goreport-url]: https://goreportcard.com/report/github.com/grokify/structured-tasks
+ [docs-godoc-svg]: https://pkg.go.dev/badge/github.com/grokify/structured-tasks
+ [docs-godoc-url]: https://pkg.go.dev/github.com/grokify/structured-tasks
  [viz-svg]: https://img.shields.io/badge/visualizaton-Go-blue.svg
- [viz-url]: https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=grokify%2Fstructured-roadmap
- [loc-svg]: https://tokei.rs/b1/github/grokify/structured-roadmap
- [repo-url]: https://github.com/grokify/structured-roadmap
+ [viz-url]: https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=grokify%2Fstructured-tasks
+ [loc-svg]: https://tokei.rs/b1/github/grokify/structured-tasks
+ [repo-url]: https://github.com/grokify/structured-tasks
  [license-svg]: https://img.shields.io/badge/license-MIT-blue.svg
- [license-url]: https://github.com/grokify/structured-roadmap/blob/master/LICENSE
+ [license-url]: https://github.com/grokify/structured-tasks/blob/master/LICENSE

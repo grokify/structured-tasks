@@ -1,12 +1,12 @@
-# Structured Roadmap - Product Requirements Document
+# Structured Tasks - Product Requirements Document
 
 ## Overview
 
-Structured Roadmap provides a machine-readable JSON intermediate representation (IR) for project roadmaps, with deterministic Markdown generation following common roadmap conventions. It is modeled after [Structured Changelog](https://github.com/grokify/structured-changelog).
+Structured Tasks provides a machine-readable JSON intermediate representation (IR) for project task lists, with deterministic Markdown generation following common task list conventions. It is modeled after [Structured Changelog](https://github.com/grokify/structured-changelog).
 
 ## Problem Statement
 
-Project roadmaps across repositories use inconsistent formats, making it difficult to:
+Project task lists across repositories use inconsistent formats, making it difficult to:
 
 - Maintain consistency across multiple projects
 - Track status programmatically
@@ -15,7 +15,7 @@ Project roadmaps across repositories use inconsistent formats, making it difficu
 
 ## Research
 
-The following repositories were reviewed to understand existing roadmap patterns:
+The following repositories were reviewed to understand existing task list patterns:
 
 | Repository | File |
 |------------|------|
@@ -29,7 +29,7 @@ The following repositories were reviewed to understand existing roadmap patterns
 
 ## Features Inventory
 
-Features identified across all reviewed roadmap files:
+Features identified across all reviewed task list files:
 
 | Feature | Files Using It |
 |---------|----------------|
@@ -390,20 +390,20 @@ Track milestone versions with dates and status:
 
 ## CLI Commands
 
-### `sroadmap validate`
+### `stasks validate`
 
-Validate ROADMAP.json against the schema.
+Validate TASKS.json against the schema.
 
 ```bash
-sroadmap validate ROADMAP.json
+stasks validate TASKS.json
 ```
 
-### `sroadmap generate`
+### `stasks generate`
 
-Generate ROADMAP.md from ROADMAP.json.
+Generate TASKS.md from TASKS.json.
 
 ```bash
-sroadmap generate -i ROADMAP.json -o ROADMAP.md
+stasks generate -i TASKS.json -o TASKS.md
 ```
 
 Options:
@@ -415,12 +415,12 @@ Options:
 | `--checkboxes` | Use `[x]`/`[ ]` syntax for tasks |
 | `--emoji` | Include emoji prefixes for status |
 
-### `sroadmap stats`
+### `stasks stats`
 
-Show roadmap statistics.
+Show task list statistics.
 
 ```bash
-sroadmap stats ROADMAP.json
+stasks stats TASKS.json
 ```
 
 Output:
@@ -438,12 +438,12 @@ By Category:
   Improvements: 3
 ```
 
-### `sroadmap deps`
+### `stasks deps`
 
 Generate dependency graph (Mermaid format).
 
 ```bash
-sroadmap deps ROADMAP.json --format mermaid
+stasks deps TASKS.json --format mermaid
 ```
 
 ## Rendering Options
@@ -501,26 +501,26 @@ Automatic failover when primary provider fails.
 ## File Structure
 
 ```
-structured-roadmap/
+structured-tasks/
 ├── cmd/
-│   └── sroadmap/
+│   └── stasks/
 │       ├── main.go
 │       ├── root.go
 │       ├── validate.go
 │       ├── generate.go
 │       ├── stats.go
 │       └── deps.go
-├── roadmap/
+├── tasks/
 │   ├── types.go          # IR types
 │   ├── parse.go          # JSON parsing
 │   ├── validate.go       # Schema validation
-│   └── roadmap_test.go
+│   └── tasks_test.go
 ├── renderer/
 │   ├── markdown.go       # Markdown generation
 │   ├── options.go        # Rendering options
 │   └── renderer_test.go
 ├── schema/
-│   └── roadmap.v1.schema.json
+│   └── tasks.v1.schema.json
 ├── examples/
 │   ├── minimal.json
 │   ├── full.json

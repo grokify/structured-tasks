@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/grokify/structured-roadmap/renderer"
-	"github.com/grokify/structured-roadmap/roadmap"
+	"github.com/grokify/structured-tasks/renderer"
+	"github.com/grokify/structured-tasks/tasks"
 	"github.com/spf13/cobra"
 )
 
@@ -27,15 +27,15 @@ var (
 
 var generateCmd = &cobra.Command{
 	Use:   "generate",
-	Short: "Generate ROADMAP.md from ROADMAP.json",
-	Long:  `Generate a Markdown roadmap file from a JSON intermediate representation.`,
+	Short: "Generate TASKS.md from TASKS.json",
+	Long:  `Generate a Markdown task list file from a JSON intermediate representation.`,
 	RunE:  runGenerate,
 }
 
 func init() {
-	generateCmd.Flags().StringVarP(&genInput, "input", "i", "ROADMAP.json", "Input JSON file")
+	generateCmd.Flags().StringVarP(&genInput, "input", "i", "TASKS.json", "Input JSON file")
 	generateCmd.Flags().StringVarP(&genOutput, "output", "o", "", "Output Markdown file (default: stdout)")
-	generateCmd.Flags().StringVar(&genGroupBy, "group-by", "area", "Grouping: area, type, phase, status, quarter, priority")
+	generateCmd.Flags().StringVar(&genGroupBy, "group-by", "area", "Grouping: area, type, phase, status")
 	generateCmd.Flags().BoolVar(&genCheckbox, "checkboxes", true, "Use [x]/[ ] checkbox syntax")
 	generateCmd.Flags().BoolVar(&genEmoji, "emoji", true, "Include emoji status indicators")
 	generateCmd.Flags().BoolVar(&genLegend, "legend", false, "Show legend table")
@@ -49,13 +49,13 @@ func init() {
 }
 
 func runGenerate(cmd *cobra.Command, args []string) error {
-	r, err := roadmap.ParseFile(genInput)
+	r, err := tasks.ParseFile(genInput)
 	if err != nil {
 		return fmt.Errorf("failed to read input: %w", err)
 	}
 
 	// Validate first
-	result := roadmap.Validate(r)
+	result := tasks.Validate(r)
 	if !result.Valid {
 		fmt.Fprintf(cmd.ErrOrStderr(), "Validation errors in %s:\n", genInput)
 		for _, e := range result.Errors {
@@ -86,10 +86,6 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		opts.GroupBy = renderer.GroupByPhase
 	case "status":
 		opts.GroupBy = renderer.GroupByStatus
-	case "quarter":
-		opts.GroupBy = renderer.GroupByQuarter
-	case "priority":
-		opts.GroupBy = renderer.GroupByPriority
 	default:
 		return fmt.Errorf("unknown group-by value: %s", genGroupBy)
 	}
