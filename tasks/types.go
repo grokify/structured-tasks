@@ -6,7 +6,7 @@ package tasks
 type Status string
 
 const (
-	StatusInProgress Status = "in_progress"
+	StatusInProgress Status = "inProgress"
 	StatusPlanned    Status = "planned"
 	StatusFuture     Status = "future"
 	StatusCompleted  Status = "completed"

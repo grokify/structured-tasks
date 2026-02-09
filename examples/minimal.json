@@ -5,7 +5,7 @@
     {
       "id": "task-1",
       "title": "First task",
-      "status": "in_progress"
+      "status": "inProgress"
     },
     {
       "id": "task-2",

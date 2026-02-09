@@ -4,7 +4,7 @@
 
   "legend": {
     "completed": {"emoji": "✅", "description": "Completed"},
-    "in_progress": {"emoji": "🚧", "description": "In Progress"},
+    "inProgress": {"emoji": "🚧", "description": "In Progress"},
     "planned": {"emoji": "📋", "description": "Planned"},
     "future": {"emoji": "💡", "description": "Under Consideration"}
   },
@@ -20,7 +20,7 @@
       "id": "auth",
       "title": "User authentication",
       "description": "Implement JWT-based authentication",
-      "status": "in_progress",
+      "status": "inProgress",
       "phase": 1,
       "area": "core",
       "type": "Added",

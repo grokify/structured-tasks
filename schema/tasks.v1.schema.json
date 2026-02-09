@@ -74,7 +74,7 @@
   "definitions": {
     "status": {
       "type": "string",
-      "enum": ["completed", "in_progress", "planned", "future"],
+      "enum": ["completed", "inProgress", "planned", "future"],
       "description": "Status of an item or phase"
     },
     "priority": {
