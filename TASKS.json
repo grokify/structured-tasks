@@ -1,5 +1,5 @@
 {
-  "ir_version": "1.0",
+  "irVersion": "1.0",
   "project": "Structured Tasks",
 
   "legend": {
@@ -300,7 +300,7 @@
       "status": "future",
       "area": "core",
       "type": "Added",
-      "depends_on": ["cross-project-deps"]
+      "dependsOn": ["cross-project-deps"]
     },
     {
       "id": "cross-project-deps",
