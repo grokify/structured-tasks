@@ -178,11 +178,17 @@ func renderOverviewTable(sb *strings.Builder, tl *tasks.TaskList, opts Options) 
 		areaNames[area.ID] = area.Name
 	}
 
-	// Find completed phases (skip these in status table)
+	// Find completed phases and build renumbering map
+	// Incomplete phases are renumbered starting from 1
 	completedPhases := make(map[int]bool)
+	phaseDisplayNum := make(map[int]int)
+	displayNum := 1
 	for _, phase := range tl.PhaseNumbers() {
 		if isPhaseComplete(tl, phase) {
 			completedPhases[phase] = true
+		} else {
+			phaseDisplayNum[phase] = displayNum
+			displayNum++
 		}
 	}
 
@@ -232,10 +238,10 @@ func renderOverviewTable(sb *strings.Builder, tl *tasks.TaskList, opts Options) 
 			status = string(task.Status)
 		}
 
-		// Phase
+		// Phase (renumbered for display)
 		phase := "-"
-		if task.Phase > 0 {
-			phase = fmt.Sprintf("%d", task.Phase)
+		if num, ok := phaseDisplayNum[task.Phase]; ok {
+			phase = fmt.Sprintf("%d", num)
 		}
 
 		// Area name
