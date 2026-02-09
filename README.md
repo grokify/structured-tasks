@@ -52,7 +52,7 @@ go get github.com/grokify/structured-tasks
 
 ```json
 {
-  "ir_version": "1.0",
+  "irVersion": "1.0",
   "project": "my-project",
   "areas": [
     {"id": "core", "name": "Core Features", "priority": 1}
@@ -73,11 +73,11 @@ go get github.com/grokify/structured-tasks
       "title": "API Rate Limiting",
       "description": "Add configurable rate limits",
       "status": "planned",
-      "target_quarter": "Q2 2026",
+      "targetQuarter": "Q2 2026",
       "area": "core",
       "type": "Added",
       "priority": "medium",
-      "depends_on": ["feature-1"]
+      "dependsOn": ["feature-1"]
     }
   ]
 }
@@ -194,16 +194,16 @@ stasks deps TASKS.json --format mermaid
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `ir_version` | string | Yes | Schema version ("1.0") |
+| `irVersion` | string | Yes | Schema version ("1.0") |
 | `project` | string | Yes | Project name |
 | `repository` | string | No | Repository URL |
-| `generated_at` | datetime | No | Generation timestamp |
+| `generatedAt` | datetime | No | Generation timestamp |
 | `legend` | object | No | Custom status legend |
 | `areas` | array | No | Project areas/components |
 | `phases` | array | No | Development phases |
 | `items` | array | No | Roadmap items |
 | `sections` | array | No | Freeform content sections |
-| `version_history` | array | No | Version milestones |
+| `versionHistory` | array | No | Version milestones |
 | `dependencies` | object | No | External/internal dependencies |
 
 ### Item Fields
@@ -213,17 +213,17 @@ stasks deps TASKS.json --format mermaid
 | `id` | string | Yes | Unique identifier |
 | `title` | string | Yes | Item title |
 | `description` | string | No | Item description |
-| `status` | enum | Yes | completed, in_progress, planned, future |
+| `status` | enum | Yes | completed, inProgress, planned, future |
 | `version` | string | No | Version where completed |
-| `completed_date` | date | No | Completion date |
-| `target_quarter` | string | No | Target quarter (e.g., "Q2 2026") |
-| `target_version` | string | No | Target version |
+| `completedDate` | date | No | Completion date |
+| `targetQuarter` | string | No | Target quarter (e.g., "Q2 2026") |
+| `targetVersion` | string | No | Target version |
 | `area` | string | No | Area ID (project component) |
 | `type` | string | No | Change type (aligns with structured-changelog) |
 | `phase` | string | No | Phase ID |
 | `priority` | enum | No | critical, high, medium, low |
 | `order` | int | No | Explicit sort order within groups |
-| `depends_on` | array | No | IDs of dependencies |
+| `dependsOn` | array | No | IDs of dependencies |
 | `tasks` | array | No | Sub-tasks with completion status |
 | `content` | array | No | Rich content blocks |
 
@@ -279,12 +279,12 @@ Phase 2: Extended Interfaces ✅
 
 ```json
 {
-  "ir_version": "1.0",
+  "irVersion": "1.0",
   "project": "my-large-project",
   "phases": [
     {"id": "phase-1", "name": "Phase 1: Foundation", "status": "completed", "order": 1},
     {"id": "phase-2", "name": "Phase 2: Extended Interfaces", "status": "completed", "order": 2},
-    {"id": "phase-3", "name": "Phase 3: Cloud Storage", "status": "in_progress", "order": 3}
+    {"id": "phase-3", "name": "Phase 3: Cloud Storage", "status": "inProgress", "order": 3}
   ],
   "areas": [
     {"id": "core", "name": "Core Package", "priority": 1},
