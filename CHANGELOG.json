@@ -1,11 +1,37 @@
 {
-  "ir_version": "1.0",
-  "project": "structured-roadmap",
-  "repository": "https://github.com/grokify/structured-roadmap",
+  "irVersion": "1.0",
+  "project": "structured-tasks",
+  "repository": "https://github.com/grokify/structured-tasks",
   "versioning": "semver",
-  "commit_convention": "conventional",
+  "commitConvention": "conventional",
   "maintainers": ["grokify"],
   "releases": [
+    {
+      "version": "v0.3.0",
+      "date": "2026-02-09",
+      "highlights": [
+        { "description": "Breaking: JSON schema migrates from snake_case to camelCase for consistency with structured-changelog" },
+        { "description": "Improved status table: phases renumbered from 1, completed phases hidden, Phase column first" }
+      ],
+      "breaking": [
+        { "description": "JSON schema field names changed from snake_case to camelCase (e.g., `ir_version` → `irVersion`, `depends_on` → `dependsOn`)", "commit": "f6c91a4" }
+      ],
+      "changed": [
+        { "description": "Update structured-changelog dependency to v0.10.0", "commit": "7e44664" },
+        { "description": "Renumber phases in status table starting from 1 (was 0-indexed)", "commit": "0b608a9" },
+        { "description": "Move Phase column to first position in status table", "commit": "7b87e95" }
+      ],
+      "added": [
+        { "description": "Add improvements for AI agent usage including status display", "commit": "e6d96fa" }
+      ],
+      "fixed": [
+        { "description": "Hide completed phases from status table for cleaner output", "commit": "fbe6b71" }
+      ],
+      "documentation": [
+        { "description": "Migrate TASKS.json examples to camelCase and regenerate TASKS.md", "commit": "d5f073b" },
+        { "description": "Update TASKS.json to new schema and regenerate TASKS.md", "commit": "8f2a107" }
+      ]
+    },
     {
       "version": "v0.2.1",
       "date": "2026-01-11",
