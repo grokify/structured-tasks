@@ -167,8 +167,8 @@ func isPhaseComplete(tl *tasks.TaskList, phase int) bool {
 
 func renderOverviewTable(sb *strings.Builder, tl *tasks.TaskList, opts Options) {
 	sb.WriteString("## Status\n\n")
-	sb.WriteString("| Task | Status | Phase | Area |\n")
-	sb.WriteString("|------|--------|-------|------|\n")
+	sb.WriteString("| Phase | Task | Status | Area |\n")
+	sb.WriteString("|-------|------|--------|------|\n")
 
 	legend := tl.GetLegend()
 
@@ -247,7 +247,7 @@ func renderOverviewTable(sb *strings.Builder, tl *tasks.TaskList, opts Options) 
 		// Task title with anchor link
 		titleLink := fmt.Sprintf("[%s](#%s)", task.Title, taskSlug(task))
 
-		fmt.Fprintf(sb, "| %s | %s | %s | %s |\n", titleLink, status, phase, areaName)
+		fmt.Fprintf(sb, "| %s | %s | %s | %s |\n", phase, titleLink, status, areaName)
 	}
 	sb.WriteString("\n")
 }

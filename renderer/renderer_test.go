@@ -191,7 +191,7 @@ func TestRenderOverviewTable(t *testing.T) {
 	if !strings.Contains(output, "## Status") {
 		t.Error("Expected status table section")
 	}
-	if !strings.Contains(output, "| Task | Status | Phase | Area |") {
+	if !strings.Contains(output, "| Phase | Task | Status | Area |") {
 		t.Error("Expected table headers")
 	}
 }
