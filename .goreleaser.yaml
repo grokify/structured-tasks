@@ -70,22 +70,3 @@ release:
   draft: false
   prerelease: auto
   name_template: "v{{.Version}}"
-
-brews:
-  - name: structured-tasks
-    repository:
-      owner: grokify
-      name: homebrew-tap
-      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    directory: Formula
-    homepage: "https://github.com/grokify/structured-tasks"
-    description: "CLI for machine-readable project task lists using JSON IR"
-    license: "MIT"
-    install: |
-      bin.install "stasks"
-      bin.install_symlink "stasks" => "structured-tasks"
-    test: |
-      system "#{bin}/stasks", "version"
-    commit_author:
-      name: goreleaserbot
-      email: bot@goreleaser.com
