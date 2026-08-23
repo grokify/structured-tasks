@@ -3,7 +3,7 @@ module github.com/grokify/structured-tasks
 go 1.26.0
 
 require (
-	github.com/grokify/structured-changelog v0.14.0
+	github.com/grokify/structured-changelog v0.16.0
 	github.com/spf13/cobra v1.10.2
 )
 
